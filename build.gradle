@@ -24,51 +24,16 @@ repositories {
 }
 
 dependencies {
-	// Spring Boot
-    implementation 'org.springframework.boot:spring-boot-starter'                    // Spring Boot 기본 스타터
-    implementation 'org.springframework.boot:spring-boot-starter-web'                // Spring MVC (REST API)
-    implementation 'org.springframework.boot:spring-boot-starter-security'           // Spring Security
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'           // Spring Data JPA
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'               // Spring JDBC
-    implementation 'org.springframework.boot:spring-boot-starter-validation'         // Bean Validation
-
-	// lombok
-	implementation "org.projectlombok:lombok"
-
-	// PostgreSQL
-	implementation "org.postgresql:postgresql"
-
-    // Thymeleaf
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'           // Thymeleaf + Spring Security integration
-
-    // MyBatis
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
-
-   	// JWT
-    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-
-	// Cloudflare R2 (S3 API compatible → AWS SDK v2)
-    implementation platform('software.amazon.awssdk:bom:2.25.22')                    // AWS SDK BOM for dependency version alignment
-    implementation 'software.amazon.awssdk:s3'                                       // AWS SDK S3 client (Cloudflare R2 대응)
-
-    // Spring Mail
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-
-    // Redis
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'         // Spring Data Redis
-    implementation 'org.springframework.session:spring-session-data-redis'           // Spring Session Redis 통합
-    implementation 'redis.clients:jedis:5.2.0'                                       // Redis client (Jedis)
-    implementation 'org.apache.commons:commons-pool2:2.11.1'                         // Commons Pool (Jedis 연결 풀)
-    implementation 'ru.zinin:tomcat-redis-session:0.8'                               // Tomcat Redis Session 관리
-    implementation 'org.springframework.data:spring-data-redis:2.7.5'                // Spring Data Redis
-    implementation 'io.lettuce:lettuce-core:6.2.1.RELEASE'                           // Lettuce client
-
-
+	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.4'
 	testImplementation 'org.springframework.security:spring-security-test'

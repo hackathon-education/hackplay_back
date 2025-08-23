@@ -7,10 +7,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hackplay.hackplay.common.BaseException;
+import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.common.CommonEnums;
-import com.hackplay.hackplay.config.BaseException;
-import com.hackplay.hackplay.config.BaseResponseStatus;
+import com.hackplay.hackplay.config.jwt.TokenProvider;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.dto.SigninReqDto;
+import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 
@@ -23,6 +26,7 @@ public class AuthServiceImpl implements AuthService{
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final MemberRepository memberRepository;
+    private final TokenProvider tokenProvider;
     
 
     @Override
@@ -49,4 +53,25 @@ public class AuthServiceImpl implements AuthService{
         memberRepository.save(member);
     }
     
+    @Override
+    @Transactional
+    public SigninRespDto signin(SigninReqDto signinReqDto){
+
+        // 회원 존재 X
+        Member member = memberRepository.findByEmail(signinReqDto.getEmail());
+        if (member == null || !bCryptPasswordEncoder.matches(signinReqDto.getPassword(),
+            member.getPassword())) {
+            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
+        }
+
+        String accessToken = tokenProvider.createAccessToken(member.getUuid());
+        String refreshToken = tokenProvider.createRefreshToken(member.getUuid());
+
+        // 회원 리프레쉬 토큰 및 마지막 로그인 시점 DB 저장.
+        member.signinUpdate(refreshToken);
+
+        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken, refreshToken);
+
+        return signinRespDto;
+    }
 }

@@ -8,12 +8,23 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.hackplay.hackplay.config.jwt.AuthorizationExtractor;
+import com.hackplay.hackplay.config.jwt.JwtAuthenticationFilter;
+import com.hackplay.hackplay.config.jwt.TokenProvider;
+
 @Configuration
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    public SecurityConfig(TokenProvider tokenProvider, AuthorizationExtractor authExtractor){
+        this.jwtAuthenticationFilter = new JwtAuthenticationFilter(tokenProvider, authExtractor);
+    }
     
     @Bean
     public BCryptPasswordEncoder passwordEncoder(){
@@ -31,7 +42,7 @@ public class SecurityConfig {
                     ).permitAll()
                     .anyRequest().authenticated()
                 )
-                // .addFilterBefore(null, null)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()));
         
         return http.build();

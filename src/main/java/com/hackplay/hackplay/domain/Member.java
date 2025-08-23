@@ -80,4 +80,10 @@ public class Member {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
+
+    // 로그인 시 회원 리프레쉬 토큰 DB 저장 및 마지막 로그인 시점 저장.
+    public void signinUpdate(String refreshToken){
+        this.refreshToken = refreshToken;
+        this.lastLoginAt = LocalDateTime.now();
+    }
 }

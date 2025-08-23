@@ -9,4 +9,8 @@ import com.hackplay.hackplay.domain.Member;
 public interface MemberRepository extends JpaRepository<Member, Long>{
 
     boolean existsByEmail(String email); // 이메일 중복 여부
+
+    Member findByUuid(String uuid); // 토큰 uuid 추가
+
+    Member findByEmail(String email); // 로그인 시 이메일로 회원 정보 조회
 }

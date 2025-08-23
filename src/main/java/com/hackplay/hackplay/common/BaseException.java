@@ -1,4 +1,4 @@
-package com.hackplay.hackplay.config;
+package com.hackplay.hackplay.common;
 
 import java.io.IOException;
 

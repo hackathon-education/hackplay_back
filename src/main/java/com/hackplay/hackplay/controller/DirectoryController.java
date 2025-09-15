@@ -27,7 +27,7 @@ public class DirectoryController {
     
     @PostMapping
     public ApiResponse<Void> createDir(
-        @PathVariable Long projectId, 
+        @PathVariable("projectId") Long projectId, 
         @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto){
             directoryService.create(projectId, directoryCreateReqDto);
         return ApiResponse.success();
@@ -35,16 +35,16 @@ public class DirectoryController {
 
     @GetMapping("/{dirId}/tree")
     public ApiResponse<DirectoryTreeRespDto> viewDirTree(
-        @PathVariable Long projectId, 
-        @PathVariable Long dirId){
+        @PathVariable("projectId") Long projectId, 
+        @PathVariable("dirId") Long dirId){
             directoryService.view(projectId, dirId);
         return null;
     }
 
     @PatchMapping("/{dirId}")
     public ApiResponse<Void> updateName(
-        @PathVariable Long projectId, 
-        @PathVariable Long dirId,  
+        @PathVariable("projectId") Long projectId, 
+        @PathVariable("dirId") Long dirId,  
         @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto){
             directoryService.update(projectId, dirId, directoryUpdateReqDto);
         return ApiResponse.success();
@@ -52,8 +52,8 @@ public class DirectoryController {
 
     @DeleteMapping("/{dirId}")
     public ApiResponse<Void> deleteDir(
-        @PathVariable Long projectId, 
-        @PathVariable Long dirId){
+        @PathVariable("projectId") Long projectId, 
+        @PathVariable("dirId") Long dirId){
             directoryService.delete(projectId, dirId);
         return ApiResponse.success();
     }

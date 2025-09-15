@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class DirectoryUpdateReqDto {
-    private String name;
+    private String newName;
 }

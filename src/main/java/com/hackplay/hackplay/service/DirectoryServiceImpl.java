@@ -138,15 +138,11 @@ public class DirectoryServiceImpl implements DirectoryService {
         List<Directory> children = directoryRepository.findByParentId(parentId);
 
         for (Directory child : children) {
-            // 현재 child의 path에서 oldParentPath 부분을 새 경로로 교체
             String updatedPath = child.getPath().replace(oldParentPath, newParentPath);
 
             child.updateDirPath(updatedPath);
-            // child 엔티티는 영속 상태라 save() 호출 안해도 dirty checking 으로 업데이트됨
-            // 그래도 안전하게 저장 강제하고 싶으면 아래 라인 유지
             directoryRepository.save(child);
 
-            // ✅ 재귀 내려갈 때는 child.getPath() (갱신된 값) 기준으로 다시 전달
             updateChildPaths(child.getId(), child.getPath(), updatedPath);
         }
     }

@@ -5,4 +5,5 @@ import lombok.Data;
 @Data
 public class DirectoryUpdateReqDto {
     private String newName;
+    private Long newParentId;
 }

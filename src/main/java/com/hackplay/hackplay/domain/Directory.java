@@ -66,10 +66,17 @@ public class Directory {
         this.updatedAt = updatedAt;
     }
 
-    // 디렉토리명 업데이트 시 사용 //
-    public void updateName(String newName, String newPath) {
+    // 디렉토리 업데이트 시 사용 //
+    public void updateDirNameAndPath(String newName, Long newParentId, String newPath) {
         this.name = newName;
+        this.parentId = newParentId;
         this.path = newPath;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void updateDirPath(String newPath) {
+        this.path = newPath;
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

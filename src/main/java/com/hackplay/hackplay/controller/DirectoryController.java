@@ -1,5 +1,7 @@
 package com.hackplay.hackplay.controller;
 
+import java.io.IOException;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,7 +30,7 @@ public class DirectoryController {
     @PostMapping
     public ApiResponse<Void> createDir(
         @PathVariable("projectId") Long projectId, 
-        @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto){
+        @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto) throws IOException{
             directoryService.create(projectId, directoryCreateReqDto);
         return ApiResponse.success();
     }
@@ -37,15 +39,14 @@ public class DirectoryController {
     public ApiResponse<DirectoryTreeRespDto> viewDirTree(
         @PathVariable("projectId") Long projectId, 
         @PathVariable("dirId") Long dirId){
-            directoryService.view(projectId, dirId);
-        return null;
+        return ApiResponse.success(directoryService.view(projectId, dirId));
     }
 
     @PatchMapping("/{dirId}")
     public ApiResponse<Void> updateName(
         @PathVariable("projectId") Long projectId, 
         @PathVariable("dirId") Long dirId,  
-        @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto){
+        @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto) throws IOException{
             directoryService.update(projectId, dirId, directoryUpdateReqDto);
         return ApiResponse.success();
     }
@@ -53,7 +54,7 @@ public class DirectoryController {
     @DeleteMapping("/{dirId}")
     public ApiResponse<Void> deleteDir(
         @PathVariable("projectId") Long projectId, 
-        @PathVariable("dirId") Long dirId){
+        @PathVariable("dirId") Long dirId) throws IOException{
             directoryService.delete(projectId, dirId);
         return ApiResponse.success();
     }

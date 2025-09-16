@@ -23,6 +23,12 @@ public enum BaseResponseStatus {
     DIRECTORY_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 디렉토리를 찾을 수 없습니다."),
     CANNOT_DELETE_ROOT(HttpStatus.FORBIDDEN, "루트 디렉토리는 삭제할 수 없습니다."),
 
+    // ===================== File ERROR =====================
+    DUPLICATE_FILE_NAME(HttpStatus.BAD_REQUEST, "이미 존재하는 파일명입니다."),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    FILE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 파일입니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기가 1MB를 초과했습니다."),
+
     // ===================== INTERNAL SERVER ERROR =====================
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류 발생"), 
     

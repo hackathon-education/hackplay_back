@@ -1,5 +1,6 @@
 package com.hackplay.hackplay.dto;
 
+import com.hackplay.hackplay.domain.Directory;
 import com.hackplay.hackplay.domain.File;
 
 import lombok.Builder;
@@ -11,7 +12,7 @@ public class FileRespDto {
     private Long fileId;
     private String name;
     private String path;
-    private Long dirId;
+    private Directory dir;
     private Long size;
     private String content;
     private String createdAt;
@@ -22,7 +23,7 @@ public class FileRespDto {
                 .fileId(file.getId())
                 .name(file.getName())
                 .path(file.getPath())
-                .dirId(file.getDirId())
+                .dir(file.getDir())
                 .size(file.getSize())
                 .content(content)
                 .createdAt(file.getCreatedAt().toString())

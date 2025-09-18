@@ -17,11 +17,13 @@ import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.domain.Directory;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.domain.Project;
 import com.hackplay.hackplay.dto.DirectoryCreateReqDto;
 import com.hackplay.hackplay.dto.DirectoryTreeRespDto;
 import com.hackplay.hackplay.dto.DirectoryUpdateReqDto;
 import com.hackplay.hackplay.repository.DirectoryRepository;
 import com.hackplay.hackplay.repository.MemberRepository;
+import com.hackplay.hackplay.repository.ProjectRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +34,7 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     private final DirectoryRepository directoryRepository;
     private final MemberRepository memberRepository;
+    private final ProjectRepository projectRepository;
 
     private static final String BASE_PATH = "projects";
 
@@ -41,10 +44,8 @@ public class DirectoryServiceImpl implements DirectoryService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
 
-        Member member = memberRepository.findByUuid(uuid);
-        if (member == null) {
-            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
-        }
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         Long parentId = directoryCreateReqDto.getParentId();
 
@@ -67,8 +68,10 @@ public class DirectoryServiceImpl implements DirectoryService {
 
         Files.createDirectories(Paths.get(path));
 
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
+
         Directory directory = Directory.builder()
-                .projectId(projectId)
+                .project(project)
                 .parentId(parentId)
                 .member(member)
                 .name(directoryCreateReqDto.getName())

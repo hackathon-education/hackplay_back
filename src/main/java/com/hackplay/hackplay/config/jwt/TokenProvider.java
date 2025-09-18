@@ -7,6 +7,8 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.hackplay.hackplay.common.BaseException;
+import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.repository.MemberRepository;
 
@@ -51,7 +53,8 @@ public class TokenProvider {
     // 토큰 생성
     // 추후 role -> 관리자, 일반 회원 구분 칼럼으로 추가 및 변경 필요
     private String createToken(String uuid, long expirationTime) {
-        Member member = memberRepository.findByUuid(uuid);
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         String role = member.getRole().name();
 
         Date expiryDate = new Date(System.currentTimeMillis() + expirationTime);
@@ -80,7 +83,8 @@ public class TokenProvider {
 
             if (tokenType.equals("refresh")) {
                 String uuid = claims.getSubject();
-                Member member = memberRepository.findByUuid(uuid);
+                 Member member = memberRepository.findByUuid(uuid)
+                    .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
                 if (member == null || !member.getRefreshToken().equals(token)) {
                     return false;
                 }

@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "Directory")
+@Table(name = "directory")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Directory {
     
@@ -27,8 +27,9 @@ public class Directory {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "project_id", nullable = false)
-    private Long projectId; // TODO: 프로젝트 도메인 생성 시 외래키 관계 수정 필요
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
     @Column(name = "parent_id")
     private Long parentId;
@@ -50,14 +51,14 @@ public class Directory {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Directory(Long projectId,
+    public Directory(Project project,
                      Long parentId,
                      Member member,
                      String name,
                      String path,
                      LocalDateTime createdAt,
                      LocalDateTime updatedAt) {
-        this.projectId = projectId;
+        this.project = project;
         this.parentId = parentId;
         this.member = member;
         this.name = name;

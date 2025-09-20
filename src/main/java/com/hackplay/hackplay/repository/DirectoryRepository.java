@@ -17,4 +17,5 @@ public interface DirectoryRepository extends JpaRepository<Directory, Long>{
     boolean existsByProjectIdAndParentIdAndName(Long projectId, Long parentId, String name);
     Optional<Directory> findByIdAndProjectId(Long dirId, Long projectId);
     List<Directory> findByParentId(Long parentId);
+    Optional<Directory> findByProjectIdAndParentIdIsNull(Long id);
 }

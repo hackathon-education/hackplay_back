@@ -2,13 +2,17 @@ package com.hackplay.hackplay.service;
 
 import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
+import com.hackplay.hackplay.domain.Directory;
 import com.hackplay.hackplay.domain.File;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.domain.Project;
 import com.hackplay.hackplay.dto.FileCreateReqDto;
 import com.hackplay.hackplay.dto.FileRespDto;
 import com.hackplay.hackplay.dto.FileUpdateReqDto;
+import com.hackplay.hackplay.repository.DirectoryRepository;
 import com.hackplay.hackplay.repository.FileRepository;
 import com.hackplay.hackplay.repository.MemberRepository;
+import com.hackplay.hackplay.repository.ProjectRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +33,8 @@ public class FileServiceImpl implements FileService {
 
     private final FileRepository fileRepository;
     private final MemberRepository memberRepository;
+    private final DirectoryRepository directoryRepository;
+    private final ProjectRepository projectRepository;
     private static final String BASE_PATH = "hackplay_back"; // TODO: 나중에 실제 프로젝트 경로로 변경 필요
 
     @Override
@@ -42,10 +48,8 @@ public class FileServiceImpl implements FileService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
 
-        Member member = memberRepository.findByUuid(uuid);
-        if (member == null) {
-            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
-        }
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         Path filePath = dirPath.resolve(dto.getName());
 
@@ -64,9 +68,12 @@ public class FileServiceImpl implements FileService {
             throw new BaseException(BaseResponseStatus.FILE_SIZE_EXCEEDED);
         }
 
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
+        Directory directory = directoryRepository.findById(dto.getDirId()).orElseThrow(() -> new BaseException(BaseResponseStatus.DIRECTORY_NOT_FOUND));
+
         File file = File.builder()
-                .projectId(projectId)
-                .dirId(dto.getDirId())
+                .project(project)
+                .dir(directory)
                 .member(member)
                 .name(dto.getName())
                 .path(filePath.toString())

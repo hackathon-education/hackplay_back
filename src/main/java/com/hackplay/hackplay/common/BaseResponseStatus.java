@@ -29,6 +29,19 @@ public enum BaseResponseStatus {
     FILE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 파일입니다."),
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기가 1MB를 초과했습니다."),
 
+    // ===================== Project ERROR =====================
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
+    PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 프로젝트에 대한 접근 권한이 없습니다."),
+    PROJECT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 생성에 실패했습니다."),
+    PROJECT_DELETION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 삭제에 실패했습니다."),
+    PROJECT_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 실행에 실패했습니다."),
+    
+    // ===================== Template ERROR =====================
+    TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "템플릿을 찾을 수 없습니다."),
+
+    // ===================== Script ERROR =====================
+    SCRIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "스크립트를 찾을 수 없습니다."),
+
     // ===================== INTERNAL SERVER ERROR =====================
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류 발생"), 
     

@@ -27,12 +27,13 @@ public class File {
     @Column(name = "id")
     private Long id;
 
-    // TODO: 추후 실제 프로젝트 테이블, 디렉토리 테이블과 연관관계 매핑 필요
-    @Column(name = "project_id", nullable = false)
-    private Long projectId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id", nullable = false)
+    private Project project;
 
-    @Column(name = "dir_id", nullable = false)
-    private Long dirId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dir_id", nullable = false)
+    private Directory dir;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -54,16 +55,16 @@ public class File {
     private LocalDateTime updatedAt;
 
     @Builder
-    public File(Long projectId,
-                Long dirId,
+    public File(Project project,
+                Directory dir,
                 Member member,
                 String name,
                 String path,
                 Long size,
                 LocalDateTime createdAt,
                 LocalDateTime updatedAt) {
-        this.projectId = projectId;
-        this.dirId = dirId;
+        this.project = project;
+        this.dir = dir;
         this.member = member;
         this.name = name;
         this.path = path;

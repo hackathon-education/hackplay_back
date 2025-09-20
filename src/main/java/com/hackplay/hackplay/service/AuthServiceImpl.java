@@ -1,6 +1,5 @@
 package com.hackplay.hackplay.service;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -46,8 +45,6 @@ public class AuthServiceImpl implements AuthService{
                         .password(bCryptPasswordEncoder.encode(signupReqDto.getPassword()))
                         .role(signupReqDto.getRole())
                         .status(CommonEnums.Status.ACTIVE)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
                         .build();
 
         memberRepository.save(member);

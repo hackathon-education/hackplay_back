@@ -7,8 +7,8 @@ import com.hackplay.hackplay.dto.FileRespDto;
 import com.hackplay.hackplay.dto.FileUpdateReqDto;
 
 public interface FileService {
-    void create(Long projectId, FileCreateReqDto dto) throws IOException;
-    FileRespDto getFile(Long projectId, Long fileId) throws IOException;
-    void update(Long projectId, Long fileId, FileUpdateReqDto dto) throws IOException;
-    void delete(Long projectId, Long fileId) throws IOException;
+    void create(Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException;
+    FileRespDto getFile(Long projectId, String path) throws IOException;
+    void update(Long projectId, FileUpdateReqDto fileUpdateReqDto) throws IOException;
+    void delete(Long projectId, String path) throws IOException;
 }

@@ -14,5 +14,5 @@ public class DirectoryCreateReqDto {
     )
     private String name;
 
-    private Long parentId;
+    private String parentPath;
 }

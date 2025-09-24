@@ -67,6 +67,9 @@ dependencies {
     implementation 'org.springframework.data:spring-data-redis:2.7.5'                // Spring Data Redis
     implementation 'io.lettuce:lettuce-core:6.2.1.RELEASE'                           // Lettuce client
 
+    // File
+    implementation 'commons-io:commons-io:2.16.1'
+
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

@@ -2,14 +2,7 @@ package com.hackplay.hackplay.controller;
 
 import java.io.IOException;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.hackplay.hackplay.common.ApiResponse;
 import com.hackplay.hackplay.dto.DirectoryCreateReqDto;
@@ -26,36 +19,34 @@ import lombok.RequiredArgsConstructor;
 public class DirectoryController {
 
     private final DirectoryService directoryService;
-    
+
     @PostMapping
     public ApiResponse<Void> createDir(
-        @PathVariable("projectId") Long projectId, 
-        @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto) throws IOException{
-            directoryService.create(projectId, directoryCreateReqDto);
+            @PathVariable("projectId") Long projectId,
+            @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto) throws IOException {
+        directoryService.create(projectId, directoryCreateReqDto);
         return ApiResponse.success();
     }
 
-    @GetMapping("/{dirId}/tree")
+    @GetMapping("/tree")
     public ApiResponse<DirectoryTreeRespDto> viewDirTree(
-        @PathVariable("projectId") Long projectId, 
-        @PathVariable("dirId") Long dirId){
-        return ApiResponse.success(directoryService.view(projectId, dirId));
+            @PathVariable("projectId") Long projectId) {
+        return ApiResponse.success(directoryService.view(projectId));
     }
 
-    @PatchMapping("/{dirId}")
-    public ApiResponse<Void> updateName(
-        @PathVariable("projectId") Long projectId, 
-        @PathVariable("dirId") Long dirId,  
-        @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto) throws IOException{
-            directoryService.update(projectId, dirId, directoryUpdateReqDto);
+    @PatchMapping
+    public ApiResponse<Void> updateDir(
+            @PathVariable("projectId") Long projectId,
+            @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto) throws IOException {
+        directoryService.update(projectId, directoryUpdateReqDto);
         return ApiResponse.success();
     }
 
-    @DeleteMapping("/{dirId}")
+    @DeleteMapping
     public ApiResponse<Void> deleteDir(
-        @PathVariable("projectId") Long projectId, 
-        @PathVariable("dirId") Long dirId) throws IOException{
-            directoryService.delete(projectId, dirId);
+            @PathVariable("projectId") Long projectId,
+            @RequestParam("path") String dirPath) throws IOException {
+        directoryService.delete(projectId, dirPath);
         return ApiResponse.success();
     }
 }

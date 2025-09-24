@@ -1,33 +1,26 @@
 package com.hackplay.hackplay.dto;
 
-import com.hackplay.hackplay.domain.Directory;
-import com.hackplay.hackplay.domain.File;
-
 import lombok.Builder;
 import lombok.Data;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.io.IOException;
 
 @Data
 @Builder
 public class FileRespDto {
-    private Long fileId;
     private String name;
     private String path;
-    private Directory dir;
-    private Long size;
+    private long size;
     private String content;
-    private String createdAt;
-    private String updatedAt;
 
-    public static FileRespDto entityToDto(File file, String content) {
+    public static FileRespDto from(Path filePath, String content) throws IOException {
         return FileRespDto.builder()
-                .fileId(file.getId())
-                .name(file.getName())
-                .path(file.getPath())
-                .dir(file.getDir())
-                .size(file.getSize())
+                .name(filePath.getFileName().toString())
+                .path(filePath.toString())
+                .size(Files.size(filePath))
                 .content(content)
-                .createdAt(file.getCreatedAt().toString())
-                .updatedAt(file.getUpdatedAt().toString())
                 .build();
     }
 }

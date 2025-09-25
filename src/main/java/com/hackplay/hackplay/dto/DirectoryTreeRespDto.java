@@ -1,17 +1,17 @@
 package com.hackplay.hackplay.dto;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class DirectoryTreeRespDto {
-    private Long dirId;
     private String name;
     private String path;
-    private Long parentId;
-    private List<DirectoryTreeRespDto> children = new ArrayList<>();
+    private String type;
+    private List<DirectoryTreeRespDto> children;
 }

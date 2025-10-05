@@ -64,8 +64,7 @@ public class Member {
 
     @Builder
     public Member(Long id, String uuid , String email, String nickname,  String password, boolean isEmailVerified, String refreshToken, 
-                CommonEnums.Role role, CommonEnums.Status status, LocalDateTime lastLoginAt, String profileImageUrl,
-                LocalDateTime createdAt, LocalDateTime updatedAt ) {
+                CommonEnums.Role role, CommonEnums.Status status, LocalDateTime lastLoginAt, String profileImageUrl) {
         this.id = id;
         this.uuid = uuid;
         this.email = email;
@@ -77,8 +76,8 @@ public class Member {
         this.status = status;
         this.lastLoginAt = lastLoginAt;
         this.profileImageUrl = profileImageUrl;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     // 로그인 시 회원 리프레쉬 토큰 DB 저장 및 마지막 로그인 시점 저장.

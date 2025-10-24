@@ -15,6 +15,11 @@ public enum BaseResponseStatus {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     INVALID_LOGIN(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
     NO_EXIST_MEMBERS(HttpStatus.BAD_REQUEST, "존재하지 않는 회원정보입니다."),
+    UNMATCHED_EMAIL_AUTH_CODE(HttpStatus.FORBIDDEN,"인증코드가 일치하지 않습니다."),
+    INVALID_VERIFICATION_CODE(HttpStatus.FORBIDDEN, "인증코드 인증에 실패했습니다."),
+
+    // ===================== Email ERROR =====================
+    FAIL_MAIL_SEND(HttpStatus.FORBIDDEN, "메일 전송에 실패했습니다."),
 
     // ===================== Directory ERROR =====================
     ROOT_DIRECTORY_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "루트 디렉토리는 이미 존재합니다."),

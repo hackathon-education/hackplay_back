@@ -85,4 +85,8 @@ public class Member {
         this.refreshToken = refreshToken;
         this.lastLoginAt = LocalDateTime.now();
     }
+
+    public void verifyEmailAuth(){
+        this.isEmailVerified = true;
+    }
 }

@@ -38,8 +38,11 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(
-                        "/api/v1/auth/**",
-                        "/api/v1/email/**"
+            "/api/v1/auth/**",
+                        "/api/v1/email/**",
+                        "/v3/api-docs/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html"
                     ).permitAll()
                     .anyRequest().authenticated()
                 )

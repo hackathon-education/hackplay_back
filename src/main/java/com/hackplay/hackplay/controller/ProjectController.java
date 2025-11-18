@@ -41,34 +41,22 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public ApiResponse<ProjectRespDto> getProject(@PathVariable Long projectId) {
+    public ApiResponse<ProjectRespDto> getProject(@PathVariable("projectId") Long projectId) {
         ProjectRespDto projectRespDto = projectService.getProject(projectId);
         return ApiResponse.success(projectRespDto);
     }
 
     @PatchMapping("/{projectId}")
     public ApiResponse<Void> updateProject(
-            @PathVariable Long projectId,
+            @PathVariable("projectId") Long projectId,
             @Valid @RequestBody ProjectUpdateReqDto projectUpdateReqDto) {
         projectService.update(projectId, projectUpdateReqDto);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{projectId}")
-    public ApiResponse<Void> deleteProject(@PathVariable Long projectId) {
+    public ApiResponse<Void> deleteProject(@PathVariable("projectId") Long projectId) {
         projectService.delete(projectId);
-        return ApiResponse.success();
-    }
-
-    @PostMapping("/{projectId}/start")
-    public ApiResponse<Void> startProject(@PathVariable Long projectId) {
-        projectService.start(projectId);
-        return ApiResponse.success();
-    }
-
-    @PostMapping("/{projectId}/stop")
-    public ApiResponse<Void> stopProject(@PathVariable Long projectId) {
-        projectService.stop(projectId);
         return ApiResponse.success();
     }
 }

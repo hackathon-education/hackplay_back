@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <title>HackPlay - 프로젝트 목록</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body>
+        <div class="topbar">내 프로젝트 목록</div>
+        <div class="container">
+            <button class="btn-create" onclick="createProject()">＋ 새 프로젝트 생성</button>
+            <div id="project-list" class="project-list"></div>
+        </div>
+        <script>
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                alert("로그인이 필요합니다.");
+                location.href = "/login";
+            }
+
+            /* ===========================
+                프로젝트 목록 불러오기
+            ============================ */
+            async function loadProjects() {
+                const res = await fetch("/api/v1/projects", {
+                    headers: {
+                        "Authorization": token
+                    }
+                });
+
+                const json = await res.json();
+
+                if (json.code !== 200) {
+                    alert("프로젝트 목록을 가져오지 못했습니다.");
+                    return;
+                }
+
+                const list = document.getElementById("project-list");
+                list.innerHTML = "";
+
+                if (json.data.length === 0) {
+                    list.innerHTML = `<div class="empty">아직 생성된 프로젝트가 없습니다.</div>`;
+                    return;
+                }
+
+                json
+                    .data
+                    .forEach(p => {
+
+                        const el = document.createElement("div");
+                        el.className = "project-card";
+                        el.onclick = () => {
+                            location.href = `/editor/${p.id}`;
+                        };
+
+                        el.innerHTML = `
+                <div class="project-title">${p.name}</div>
+                <div class="project-desc">${p.description || '설명 없음'}</div>
+            `;
+
+                        list.appendChild(el);
+                    });
+            }
+
+            /* ===========================
+                새 프로젝트 생성
+            ============================ */
+            async function createProject() {
+
+                const name = prompt("프로젝트 이름을 입력하세요:");
+                if (!name) 
+                    return;
+                
+                const desc = prompt("프로젝트 설명 (선택):") || "";
+
+                const res = await fetch("/api/v1/projects", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({name, description: desc})
+                });
+
+                const json = await res.json();
+
+                if (json.code === 200) {
+                    alert("프로젝트가 생성되었습니다!");
+                    loadProjects();
+                } else {
+                    alert("프로젝트 생성 실패");
+                }
+            }
+
+            // 페이지 로드 시 자동 실행
+            loadProjects();
+        </script>
+
+    </body>
+</html>

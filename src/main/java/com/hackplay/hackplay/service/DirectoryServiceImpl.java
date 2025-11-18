@@ -1,15 +1,13 @@
 package com.hackplay.hackplay.service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,7 +17,8 @@ import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.dto.DirectoryCreateReqDto;
 import com.hackplay.hackplay.dto.DirectoryTreeRespDto;
-import com.hackplay.hackplay.dto.DirectoryUpdateReqDto;
+import com.hackplay.hackplay.dto.DirectoryMoveReqDto;
+import com.hackplay.hackplay.dto.DirectoryRenameReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 import com.hackplay.hackplay.repository.ProjectRepository;
 
@@ -38,7 +37,6 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "dirTree", key = "#projectId")
     public void create(Long projectId, DirectoryCreateReqDto directoryCreateReqDto) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
@@ -64,7 +62,6 @@ public class DirectoryServiceImpl implements DirectoryService {
     }
 
     @Override
-    @Cacheable(value = "dirTree", key = "#projectId")
     public DirectoryTreeRespDto view(Long projectId) {
         String projectUuid = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND))
@@ -74,19 +71,19 @@ public class DirectoryServiceImpl implements DirectoryService {
         if (!Files.exists(rootPath)) {
             throw new BaseException(BaseResponseStatus.DIRECTORY_NOT_FOUND);
         }
-        return buildTree(rootPath);
+        return buildTree(rootPath, rootPath);
     }
 
-    private DirectoryTreeRespDto buildTree(Path dirPath) {
+    private DirectoryTreeRespDto buildTree(Path dirPath, Path rootPath) {
         try {
             List<DirectoryTreeRespDto> children = Files.list(dirPath)
                     .map(path -> {
                         if (Files.isDirectory(path)) {
-                            return buildTree(path);
+                            return buildTree(path, rootPath);
                         } else {
                             return new DirectoryTreeRespDto(
                                     path.getFileName().toString(),
-                                    path.toString(),
+                                    rootPath.relativize(path).toString().replace("\\", "/"), // ✅ 상대경로
                                     "FILE",
                                     List.of()
                             );
@@ -95,8 +92,8 @@ public class DirectoryServiceImpl implements DirectoryService {
                     .collect(Collectors.toList());
 
             return new DirectoryTreeRespDto(
-                    dirPath.getFileName().toString(),
-                    dirPath.toString(),
+                    dirPath.equals(rootPath) ? "" : rootPath.relativize(dirPath).toString().replace("\\", "/"), // ✅ 루트면 빈 문자열
+                    dirPath.equals(rootPath) ? "" : rootPath.relativize(dirPath).toString().replace("\\", "/"),
                     "DIRECTORY",
                     children
             );
@@ -107,33 +104,48 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "dirTree", key = "#projectId")
-    public void update(Long projectId, DirectoryUpdateReqDto dto) throws IOException {
+    public void rename(Long projectId, DirectoryRenameReqDto directoryRenameReqDto) throws IOException {
         String projectUuid = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND))
                 .getUuid();
 
-        Path oldPath = Paths.get(BASE_PATH, projectUuid, dto.getOldPath());
-        Path newPath = Paths.get(BASE_PATH, projectUuid, dto.getNewPath());
+        Path basePath = Paths.get(BASE_PATH, projectUuid);
+        Path source = basePath.resolve(directoryRenameReqDto.getCurrentPath()).normalize();
+        Path target = source.resolveSibling(directoryRenameReqDto.getNewName()).normalize();
 
-        if (!Files.exists(oldPath)) {
-            throw new BaseException(BaseResponseStatus.DIRECTORY_NOT_FOUND);
-        }
-
-        if (Files.exists(newPath)) {
-            throw new BaseException(BaseResponseStatus.DUPLICATE_DIRECTORY_NAME);
-        }
-
-        if (newPath.getParent() != null) {
-            Files.createDirectories(newPath.getParent());
-        }
-
-        FileUtils.moveDirectory(oldPath.toFile(), newPath.toFile());
+        performMove(basePath, source, target);
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "dirTree", key = "#projectId")
+    public void move(Long projectId, DirectoryMoveReqDto directoryMoveReqDto) throws IOException {
+        String projectUuid = projectRepository.findById(projectId)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND))
+                .getUuid();
+
+        Path basePath = Paths.get(BASE_PATH, projectUuid);
+        Path source = basePath.resolve(directoryMoveReqDto.getCurrentPath()).normalize();
+        Path newParent = basePath.resolve(directoryMoveReqDto.getNewParentDir()).normalize();
+        Path target = newParent.resolve(source.getFileName()).normalize();
+
+        performMove(basePath, source, target);
+    }
+
+    private void performMove(Path basePath, Path source, Path target) throws IOException {
+        if (!source.startsWith(basePath) || !target.startsWith(basePath)) {
+            throw new SecurityException("허용되지 않은 경로 접근입니다.");
+        }
+
+        if (!Files.exists(source)) {
+            throw new FileNotFoundException("대상 디렉토리가 존재하지 않습니다: " + source);
+        }
+
+        Files.createDirectories(target.getParent());
+        Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long projectId, String dirPath) throws IOException {
         String projectUuid = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND))

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>HackPlay 로그인</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body class="login">
+        <div class="login-container">
+            <h1>HackPlay 로그인</h1>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="email">이메일</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="example@email.com"
+                        required="required"/>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">비밀번호</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="********"
+                        required="required"/>
+                </div>
+
+                <button type="submit" class="btn">로그인</button>
+                <div id="error-msg" class="error"></div>
+            </form>
+        </div>
+
+        <script>
+            document
+                .getElementById("login-form")
+                .addEventListener("submit", async (e) => {
+                    e.preventDefault();
+
+                    const email = document
+                        .getElementById("email")
+                        .value
+                        .trim();
+                    const password = document
+                        .getElementById("password")
+                        .value
+                        .trim();
+
+                    try {
+                        const res = await fetch("/api/v1/auth/signin", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({email, password})
+                        });
+
+                        const data = await res.json();
+
+                        if (res.ok && data.code === 200) {
+                            const token = data.data.accessToken;
+
+                            localStorage.setItem("token", "Bearer " + token);
+
+                            window.location.href = "/projects.html";
+                        } else {
+                            document
+                                .getElementById("error-msg")
+                                .textContent = data.message || "로그인 실패";
+                        }
+                    } catch (err) {
+                        document
+                            .getElementById("error-msg")
+                            .textContent = "서버 연결 오류";
+                    }
+                });
+        </script>
+
+    </body>
+</html>

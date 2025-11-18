@@ -12,7 +12,7 @@ public class FileCreateReqDto {
     @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "파일명은 영문, 숫자, '.', '_', '-'만 허용됩니다.")
     private String name;
 
-    @NotBlank(message = "파일 내용은 필수입니다.")
+    // @NotBlank(message = "파일 내용은 필수입니다.")
     @Size(max = 1048576, message = "파일 크기는 1MB를 초과할 수 없습니다.")
     private String content;
 

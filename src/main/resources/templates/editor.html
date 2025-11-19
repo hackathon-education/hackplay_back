@@ -45,8 +45,6 @@
     <div class="terminal-tabs" id="terminal-tabs">
       <div class="terminal-controls">
         <button onclick="createTerminalInternal()">＋ 추가</button>
-        <button onclick="HackPlayTerminal.splitTerminal()">⬓ 분할</button>
-        <button onclick="HackPlayTerminal.clearActiveTerminal()">🧹 Clear</button>
 
       </div>
     </div>
@@ -56,13 +54,11 @@
 
   <div id="menu" class="context-menu"></div>
 
-  <!-- projectId MUST be defined BEFORE loading other scripts -->
   <script>
       window.projectId = window.location.pathname.split('/').pop();
       console.log("ProjectId:", window.projectId);
   </script>
 
-  <!-- Core JS Files -->
   <script src="/js/filetree.js"></script>
   <script src="/js/editor-core.js"></script>
   <script src="/js/terminal.js"></script>

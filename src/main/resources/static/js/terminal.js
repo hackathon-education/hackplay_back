@@ -12,15 +12,10 @@
     activateTerminal,
     closeTerminal,
 
-    // 여기에 terminals 추가 ⭐
-    terminals: terminals,
-    splitTerminal,
-    clearActiveTerminal
+    terminals: terminals
   };
 
   window.createTerminalInternal = (isRunTerminal) => createTerminalInternal(isRunTerminal);
-  window.splitTerminal = splitTerminal;
-  window.clearActiveTerminal = clearActiveTerminal;
 
   /* ================================
       CREATE TERMINAL
@@ -152,19 +147,6 @@ function connectRunSocket(term, id) {
   });
 
   return ws;
-}
-
-function splitTerminal() {
-  return createTerminalInternal(false);
-}
-
-function clearActiveTerminal() {
-  if (!activeTerminalId) return;
-  const t = terminals[activeTerminalId];
-  if (t && t.term) {
-    t.term.clear();
-    t.term.writeln("\x1b[32m[Terminal cleared]\x1b[0m");
-  }
 }
 
   /* ================================

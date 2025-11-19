@@ -16,7 +16,6 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.config.redis.RedisUtil;
-import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.dto.EmailAuthReqDto;
 import com.hackplay.hackplay.dto.EmailVerifyReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
@@ -55,11 +54,6 @@ public class EmailServiceImpl implements EmailService{
 
     @Override
     public String setEmail(String email, String code) {
-        Member member = memberRepository.findByEmail(email);
-        if (member == null) {
-            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
-        }
-
         Context context = new Context();
         context.setVariable("code", code);
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
@@ -125,13 +119,7 @@ public class EmailServiceImpl implements EmailService{
         if (!findCodeByEmail.equals(emailVerifyReqDto.getVerifyCode())) {
             throw new BaseException(BaseResponseStatus.INVALID_VERIFICATION_CODE);
         }
-
-        Member member = memberRepository.findByEmail(emailVerifyReqDto.getEmail());
-        if (member == null) {
-            throw new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS);
-        }
-
-        member.verifyEmailAuth();
+        redisUtil.setDataExpire(emailVerifyReqDto.getEmail() + ":verified", "true", 300L);
     }
 
     @Override

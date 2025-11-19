@@ -10,6 +10,7 @@ import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.common.CommonEnums;
 import com.hackplay.hackplay.config.jwt.TokenProvider;
+import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService{
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final MemberRepository memberRepository;
     private final TokenProvider tokenProvider;
+    private final RedisUtil redisUtil;
     
 
     @Override
@@ -38,6 +40,11 @@ public class AuthServiceImpl implements AuthService{
         if(memberRepository.existsByEmail(signupReqDto.getEmail()))
             throw new BaseException(BaseResponseStatus.DUPLICATE_EMAIL);
 
+        String verified = redisUtil.getData(signupReqDto.getEmail() + ":verified");
+        if (verified == null || !verified.equals("true")) {
+            throw new BaseException(BaseResponseStatus.EMAIL_NOT_VERIFIED);
+        }
+
         Member member = Member.builder()
                         .uuid(UUID.randomUUID().toString())
                         .email(signupReqDto.getEmail())
@@ -45,6 +52,7 @@ public class AuthServiceImpl implements AuthService{
                         .password(bCryptPasswordEncoder.encode(signupReqDto.getPassword()))
                         .role(signupReqDto.getRole())
                         .status(CommonEnums.Status.ACTIVE)
+                        .isEmailVerified(true)
                         .build();
 
         memberRepository.save(member);

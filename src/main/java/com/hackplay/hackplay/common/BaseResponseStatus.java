@@ -20,6 +20,7 @@ public enum BaseResponseStatus {
 
     // ===================== Email ERROR =====================
     FAIL_MAIL_SEND(HttpStatus.FORBIDDEN, "메일 전송에 실패했습니다."),
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않았습니다."),
 
     // ===================== Directory ERROR =====================
     ROOT_DIRECTORY_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "루트 디렉토리는 이미 존재합니다."),

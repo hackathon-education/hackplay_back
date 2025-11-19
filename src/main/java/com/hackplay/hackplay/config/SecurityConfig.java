@@ -42,7 +42,16 @@ public class SecurityConfig {
                         "/api/v1/email/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/swagger-ui.html"
+                        "/swagger-ui.html",
+                        "/editor/**",
+                        "/ws/**",
+                        "/js/**",
+                        "/css/**",
+                        "/images/**",
+                        "/favicon.ico",
+                        "/static/**",
+                        "/login.html",
+                        "/projects.html"
                     ).permitAll()
                     .anyRequest().authenticated()
                 )
@@ -56,6 +65,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of(
+            "http://localhost:8080",
             "http://localhost:5173"
         ));
         config.addAllowedMethod("*");

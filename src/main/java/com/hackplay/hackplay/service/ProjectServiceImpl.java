@@ -103,9 +103,7 @@ public class ProjectServiceImpl implements ProjectService {
     public void delete(Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
-
-        stop(projectId);
-
+                
         Path projectPath = Paths.get(projectsBasePath, project.getUuid().toString());
         if (Files.exists(projectPath)) {
             try {
@@ -122,60 +120,5 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         projectRepository.delete(project);
-    }
-
-    private ProcessBuilder createNpmProcess(Path projectPath) {
-        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-            return new ProcessBuilder(
-                "cmd.exe", "/c", "npm", "run", "dev"
-            );
-        } else {
-            return new ProcessBuilder("npm", "run", "dev");
-        }
-    }
-
-    @Override
-    @Transactional
-    public void start(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
-
-        Path projectPath = Paths.get(projectsBasePath, project.getUuid().toString());
-        
-        try {
-            ProcessBuilder pb = createNpmProcess(projectPath);
-            pb.directory(projectPath.toFile());
-            pb.start();
-            
-        } catch (Exception e) {
-            throw new BaseException(BaseResponseStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void stop(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
-
-        try {
-            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-                ProcessBuilder pb = new ProcessBuilder(
-                    "cmd.exe", "/c", 
-                    "for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :3000') do taskkill /f /pid %a"
-                );
-                Process process = pb.start();
-                process.waitFor();
-            } else {
-                ProcessBuilder pb = new ProcessBuilder(
-                    "pkill", "-f", "vite.*" + project.getUuid().toString()
-                );
-                Process process = pb.start();
-                process.waitFor();
-            }
-            
-        } catch (Exception e) {
-            throw new BaseException(BaseResponseStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }

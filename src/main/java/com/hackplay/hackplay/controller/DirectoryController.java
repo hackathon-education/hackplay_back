@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import com.hackplay.hackplay.common.ApiResponse;
 import com.hackplay.hackplay.dto.DirectoryCreateReqDto;
 import com.hackplay.hackplay.dto.DirectoryTreeRespDto;
-import com.hackplay.hackplay.dto.DirectoryUpdateReqDto;
+import com.hackplay.hackplay.dto.DirectoryMoveReqDto;
+import com.hackplay.hackplay.dto.DirectoryRenameReqDto;
 import com.hackplay.hackplay.service.DirectoryService;
 
 import jakarta.validation.Valid;
@@ -34,11 +35,19 @@ public class DirectoryController {
         return ApiResponse.success(directoryService.view(projectId));
     }
 
-    @PatchMapping
-    public ApiResponse<Void> updateDir(
+    @PatchMapping("/rename")
+    public ApiResponse<Void> renameDir(
             @PathVariable("projectId") Long projectId,
-            @Valid @RequestBody DirectoryUpdateReqDto directoryUpdateReqDto) throws IOException {
-        directoryService.update(projectId, directoryUpdateReqDto);
+            @Valid @RequestBody DirectoryRenameReqDto directoryRenameReqDto) throws IOException {
+        directoryService.rename(projectId, directoryRenameReqDto);
+        return ApiResponse.success();
+    }
+
+    @PatchMapping("/move")
+    public ApiResponse<Void> moveDir(
+            @PathVariable("projectId") Long projectId,
+            @Valid @RequestBody DirectoryMoveReqDto directoryMoveReqDto) throws IOException {
+        directoryService.move(projectId, directoryMoveReqDto);
         return ApiResponse.success();
     }
 

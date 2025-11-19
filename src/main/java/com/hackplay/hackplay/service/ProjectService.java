@@ -13,6 +13,4 @@ public interface ProjectService {
     ProjectRespDto getProject(Long projectId);
     void update(Long projectId, ProjectUpdateReqDto request);
     void delete(Long projectId);
-    void start(Long projectId);
-    void stop(Long projectId);
 }

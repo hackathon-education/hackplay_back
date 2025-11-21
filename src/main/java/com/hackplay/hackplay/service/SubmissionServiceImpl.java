@@ -61,10 +61,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         // 실제 프로젝트 폴더 경로
         Path sourceDir = Paths.get("../projects/" + project.getUuid());
 
-        // 🔥 디버깅 (현재 작업 디렉토리)
-        System.out.println(">> CWD: " + new File(".").getAbsolutePath());
-        System.out.println(">> SourceDir: " + sourceDir.toAbsolutePath());
-        System.out.println(">> Exists? " + Files.exists(sourceDir));
+        // 디버깅 (현재 작업 디렉토리)
+        // System.out.println(">> CWD: " + new File(".").getAbsolutePath());
+        // System.out.println(">> SourceDir: " + sourceDir.toAbsolutePath());
+        // System.out.println(">> Exists? " + Files.exists(sourceDir));
 
         if (!Files.exists(sourceDir)) {
                 throw new BaseException(BaseResponseStatus.WORKSPACE_NOT_FOUND);
@@ -75,7 +75,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         Files.createDirectories(Paths.get(zipDir));
 
         // 디버깅
-        System.out.println(">> ZipDir: " + Paths.get(zipDir).toAbsolutePath());
+        // System.out.println(">> ZipDir: " + Paths.get(zipDir).toAbsolutePath());
 
         // zip 파일 이름
         String zipName = uuid + "_" + System.currentTimeMillis() + ".zip";
@@ -115,9 +115,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .toList();
         }
 
-        // -----------------------------
         // 유저 - 제출 상세 조회
-        // -----------------------------
         @Override
         public SubmissionDetailRespDto getSubmissionDetail(Long submissionId) {
                 Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

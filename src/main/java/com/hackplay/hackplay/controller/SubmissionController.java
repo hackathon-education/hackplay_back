@@ -26,7 +26,7 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
 
-    // 코드 제출
+    // 프로젝트 제출
     @PostMapping
     public ApiResponse<Void> submitProject(@Valid @RequestBody SubmissionReqDto submissionReqDto) throws IOException {
         submissionService.submit(submissionReqDto);
@@ -39,7 +39,7 @@ public class SubmissionController {
         return ApiResponse.success(submissionService.getMySubmissions());
     }
 
-    // 내 제출 상세 조회 (코드 + 프로젝트 정보)
+    // 내 제출 상세 조회
     @GetMapping("/{submissionId}")
     public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId) {
         return ApiResponse.success(submissionService.getSubmissionDetail(submissionId));

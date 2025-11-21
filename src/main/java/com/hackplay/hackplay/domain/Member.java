@@ -3,9 +3,12 @@ package com.hackplay.hackplay.domain;
 import java.time.LocalDateTime;
 
 import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.CommonEnums.Auth;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -46,6 +49,10 @@ public class Member {
 
     @Column(name = "role", nullable = false)
     CommonEnums.Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth", nullable = false)
+    CommonEnums.Auth auth = Auth.USER;
 
     @Column(name = "status", nullable = false)
     CommonEnums.Status status;

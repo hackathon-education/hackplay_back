@@ -1,5 +1,7 @@
 package com.hackplay.hackplay.dto;
 
+import com.hackplay.hackplay.common.CommonEnums;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -20,4 +22,7 @@ public class ProjectCreateReqDto {
 
     @NotNull(message = "공개 여부는 필수입니다.")
     private Boolean isPublic;
+
+    @NotNull(message = "강의명은 필수입니다.")
+    private CommonEnums.Lecture lecture;
 }

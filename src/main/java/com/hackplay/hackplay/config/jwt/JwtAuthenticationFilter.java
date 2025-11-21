@@ -16,7 +16,6 @@ import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,37 +41,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token;
-        String tokenType;
+        String token = null;
+        boolean isRefresh = false;
 
         if ("/api/v1/token/rotate".equals(path)) {
             token = authExtractor.extractRefreshToken(request);
-            tokenType = "refresh";
+            isRefresh = true;
         } else {
-            token = authExtractor.extract(request, "Bearer").replaceAll("\\s+", "");
-            tokenType = "access";
+            String raw = authExtractor.extract(request, "Bearer");
+            token = (raw != null) ? raw.replaceAll("\\s+", "") : null;
         }
 
-        if (StringUtils.hasText(token) && tokenProvider.validateToken(token, tokenType)) {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(tokenProvider.getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+        if (StringUtils.hasText(token) && !tokenProvider.validateToken(token, isRefresh)) {
+            BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
+            return;
+        }
+
+        if (!isRefresh) { // Access Token만 인증 처리
+            var claims = tokenProvider.getClaims(token);
 
             String uuid = claims.getSubject();
-            String role = claims.get("role", String.class).toUpperCase();
+            String auth = claims.get("auth", String.class).toUpperCase();
 
-            List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-            log.info("권한 확인: {}", authorities);
+            var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + auth));
 
-            Authentication authentication = new UsernamePasswordAuthenticationToken(uuid, null, authorities);
+            Authentication authentication =
+                    new UsernamePasswordAuthenticationToken(uuid, null, authorities);
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
             request.setAttribute("uuid", uuid);
-            filterChain.doFilter(request, response);
-        } else {
-            BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
         }
+
+        filterChain.doFilter(request, response);
     }
     private boolean shouldSkipFilter(HttpServletRequest request) {
         String path = request.getRequestURI();

@@ -3,6 +3,8 @@ package com.hackplay.hackplay.domain;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.hackplay.hackplay.common.CommonEnums;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -37,11 +39,17 @@ public class Project {
     @Column(name = "description", length = 500)
     private String description;
 
+    @Column(name = "lecture", length = 500)
+    private CommonEnums.Lecture lecture;
+
     @Column(name = "template_type", nullable = false, length = 50)
     private String templateType;
 
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic = false;
+
+    @Column(name = "total_week", nullable = false)
+    private Integer totalWeek;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -54,12 +62,14 @@ public class Project {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Project(String name, String description, String templateType, Boolean isPublic, Member member) {
+    public Project(String name, String description, String templateType, Boolean isPublic, Member member, CommonEnums.Lecture lecture) {
         this.uuid = UUID.randomUUID().toString();
         this.name = name;
         this.description = description;
+        this.lecture = lecture;
         this.templateType = templateType;
         this.isPublic = isPublic;
+        this.totalWeek = lecture.getTotalWeek();
         this.member = member;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();

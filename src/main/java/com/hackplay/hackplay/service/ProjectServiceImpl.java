@@ -15,10 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.domain.MemberProgress;
 import com.hackplay.hackplay.domain.Project;
+import com.hackplay.hackplay.domain.Submission;
 import com.hackplay.hackplay.dto.ProjectCreateReqDto;
 import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
+import com.hackplay.hackplay.repository.MemberProgressRepository;
 import com.hackplay.hackplay.repository.MemberRepository;
 import com.hackplay.hackplay.repository.ProjectRepository;
 
@@ -31,6 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final MemberRepository memberRepository;
+    private final MemberProgressRepository memberProgressRepository;
 
     @Value("${projects.base-path}")
     private String projectsBasePath;
@@ -52,6 +56,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .description(projectCreateReqDto.getDescription())
                 .templateType(projectCreateReqDto.getTemplateType())
                 .isPublic(projectCreateReqDto.getIsPublic())
+                .lecture(projectCreateReqDto.getLecture())
                 .member(member)
                 .build();
 
@@ -71,22 +76,52 @@ public class ProjectServiceImpl implements ProjectService {
             project.getName()
         );
         pb.inheritIO().start().waitFor();
-    }
 
+        MemberProgress progress = MemberProgress.builder()
+                .member(member)
+                .project(project)
+                .build();
+
+        memberProgressRepository.save(progress);
+    }
 
     @Override
     public List<ProjectRespDto> getProjects() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String) authentication.getPrincipal();
+
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+
         return projectRepository.findAll().stream()
-                .map(ProjectRespDto::from)
+                .map(project -> {
+                    Integer week = memberProgressRepository
+                            .findByMemberAndProject(member, project)
+                            .map(MemberProgress::getCurrentWeek)
+                            .orElse(1);
+
+                    return ProjectRespDto.from(project, week);
+                })
                 .collect(Collectors.toList());
     }
-
     @Override
     public ProjectRespDto getProject(Long projectId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String uuid = (String)authentication.getPrincipal();
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
-        return ProjectRespDto.from(project);
+        Member member = memberRepository.findByUuid(uuid).orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+
+        MemberProgress progress = memberProgressRepository.findByMemberAndProject(
+                member,
+                project
+        )
+        .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_PROGRESS));
+
+        return ProjectRespDto.from(project, progress.getCurrentWeek());
     }
 
     @Override

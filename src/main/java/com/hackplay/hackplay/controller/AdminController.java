@@ -58,10 +58,10 @@ public class AdminController {
 
     // Zip 다운로드
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/submission/{id}/download")
-    public ResponseEntity<FileSystemResource> download(@PathVariable("id") Long id) {
+    @GetMapping("/submission/{submissionId}/download")
+    public ResponseEntity<FileSystemResource> download(@PathVariable("submissionId") Long submissionId) {
 
-        FileSystemResource resource = adminService.downloadSubmissionZip(id);
+        FileSystemResource resource = adminService.downloadSubmissionZip(submissionId);
         File file = resource.getFile();
 
         return ResponseEntity.ok()

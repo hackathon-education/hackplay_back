@@ -52,8 +52,15 @@ public enum BaseResponseStatus {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류 발생"), 
     
     // ===================== Token ERROR =====================
-    TOKEN_EXPIRED(HttpStatus.INTERNAL_SERVER_ERROR,"토큰이 만료되었습니다.");
+    TOKEN_EXPIRED(HttpStatus.INTERNAL_SERVER_ERROR,"토큰이 만료되었습니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    NO_PERMISSION(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
 
+    // ===================== Submission ERROR =====================
+    WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "작업 공간을 찾을 수 없습니다."),
+    NO_PROGRESS(HttpStatus.BAD_REQUEST, "해당 주차는 아직 열리지 않았습니다."),
+    INVALID_WEEK(HttpStatus.BAD_REQUEST, "유효하지 않은 주차 정보입니다."),
+    NO_EXIST_SUBMISSION(HttpStatus.NOT_FOUND, "제출 내역이 존재하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

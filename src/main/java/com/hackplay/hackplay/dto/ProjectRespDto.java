@@ -15,11 +15,11 @@ public class ProjectRespDto {
     private String templateType;
     private Boolean isPublic;
     private String nickname;
-    private String containerStatus;
+    private Integer week;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static ProjectRespDto from(Project project) {
+    public static ProjectRespDto from(Project project, Integer week) {
         return ProjectRespDto.builder()
                 .id(project.getId())
                 .name(project.getName())
@@ -27,15 +27,9 @@ public class ProjectRespDto {
                 .templateType(project.getTemplateType())
                 .isPublic(project.getIsPublic())
                 .nickname(project.getMember().getNickname())
+                .week(week)
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();
     }
-
-    public static ProjectRespDto from(Project project, String status) {
-        ProjectRespDto dto = from(project);
-        dto.containerStatus = status;
-        return dto;
-    }
-
 }

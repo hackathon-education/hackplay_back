@@ -51,17 +51,16 @@ public class TokenProvider {
     }
 
     // 토큰 생성
-    // 추후 role -> 관리자, 일반 회원 구분 칼럼으로 추가 및 변경 필요
     private String createToken(String uuid, long expirationTime) {
         Member member = memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
-        String role = member.getRole().name();
+        String auth = member.getAuth().name();
 
         Date expiryDate = new Date(System.currentTimeMillis() + expirationTime);
         return Jwts.builder()
                 .setHeaderParam("typ", "JWT")
                 .setSubject(uuid)
-                .claim("role", role)
+                .claim("auth", auth)
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(signingKey, SignatureAlgorithm.HS256)
@@ -69,7 +68,7 @@ public class TokenProvider {
     }
 
     // 토큰 검증
-    public boolean validateToken(String token, String tokenType) {
+    public boolean validateToken(String token, boolean isRefresh) {
         try {
             Claims claims = Jwts.parserBuilder()
                 .setSigningKey(signingKey)
@@ -81,13 +80,12 @@ public class TokenProvider {
                 return false;
             }
 
-            if (tokenType.equals("refresh")) {
+            if (isRefresh) {
                 String uuid = claims.getSubject();
-                 Member member = memberRepository.findByUuid(uuid)
+                Member member = memberRepository.findByUuid(uuid)
                     .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
-                if (member == null || !member.getRefreshToken().equals(token)) {
-                    return false;
-                }
+                
+                return token.equals(member.getRefreshToken());
             }
 
             return true;
@@ -96,13 +94,11 @@ public class TokenProvider {
         }
     }
 
-    public String getSubject(String token) {
-        String subject = Jwts.parser()
-                .setSigningKey(signingKey)
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-
-        return subject;
+    public Claims getClaims(String token){
+        return Jwts.parserBuilder()
+        .setSigningKey(signingKey)
+        .build()
+        .parseClaimsJws(token)
+        .getBody();
     }
 }

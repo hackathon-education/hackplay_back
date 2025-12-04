@@ -4,8 +4,10 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -13,18 +15,20 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.hackplay.hackplay.config.jwt.AuthorizationExtractor;
+import com.hackplay.hackplay.config.jwt.JwtAccessDeniedHandler;
+import com.hackplay.hackplay.config.jwt.JwtAuthenticationEntryPoint;
 import com.hackplay.hackplay.config.jwt.JwtAuthenticationFilter;
-import com.hackplay.hackplay.config.jwt.TokenProvider;
+
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    
-    public SecurityConfig(TokenProvider tokenProvider, AuthorizationExtractor authExtractor){
-        this.jwtAuthenticationFilter = new JwtAuthenticationFilter(tokenProvider, authExtractor);
-    }
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtAccessDeniedHandler accessDeniedHandler;
     
     @Bean
     public BCryptPasswordEncoder passwordEncoder(){
@@ -36,6 +40,12 @@ public class SecurityConfig {
         http
             .httpBasic(AbstractHttpConfigurer::disable)
             .csrf(AbstractHttpConfigurer::disable)
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    .accessDeniedHandler(accessDeniedHandler)
+            )
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .formLogin(fl -> fl.disable())
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(
             "/api/v1/auth/**",
@@ -53,6 +63,7 @@ public class SecurityConfig {
                         "/login.html",
                         "/projects.html"
                     ).permitAll()
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

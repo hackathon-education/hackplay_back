@@ -17,7 +17,6 @@ import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.domain.MemberProgress;
 import com.hackplay.hackplay.domain.Project;
-import com.hackplay.hackplay.domain.Submission;
 import com.hackplay.hackplay.dto.ProjectCreateReqDto;
 import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;

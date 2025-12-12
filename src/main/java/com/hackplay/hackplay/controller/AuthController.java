@@ -31,4 +31,10 @@ public class AuthController {
     public ApiResponse<SigninRespDto> signin(@Valid @RequestBody SigninReqDto signinReqDto){
         return ApiResponse.success(authService.signin(signinReqDto));
     }
+
+    @PostMapping("/signout")
+    public ApiResponse<Void> signout(){
+        authService.signout();
+        return ApiResponse.success();
+    }
 }

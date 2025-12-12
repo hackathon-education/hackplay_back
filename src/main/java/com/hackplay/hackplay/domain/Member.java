@@ -92,4 +92,8 @@ public class Member {
         this.refreshToken = refreshToken;
         this.lastLoginAt = LocalDateTime.now();
     }
+
+    public void signoutUpdate() {
+        this.refreshToken = null;
+    }
 }

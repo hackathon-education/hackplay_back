@@ -7,4 +7,5 @@ import com.hackplay.hackplay.dto.SignupReqDto;
 public interface AuthService {
     void signup(SignupReqDto signupReqDto);
     SigninRespDto signin(SigninReqDto signinReqDto);
+    void signout();
 }

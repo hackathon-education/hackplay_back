@@ -30,7 +30,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AuthorizationExtractor authExtractor;
 
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
+        
         String path = request.getRequestURI();
         log.info(">>> JwtAuthenticationFilter 호출: {}", path);
 
@@ -49,6 +49,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String raw = authExtractor.extract(request, "Bearer");
             token = (raw != null) ? raw.replaceAll("\\s+", "") : null;
         }
+
+        // 1. 토큰이 아예 없으면 → 인증 시도 없이 다음 필터로 넘김 (로그인 API 포함)
+        // if (!StringUtils.hasText(token)) {
+        //     filterChain.doFilter(request, response);
+        //     return;
+        // }
+
+        // // 2. 토큰이 있으나 잘못된 경우
+        // if (!tokenProvider.validateToken(token, isRefresh)) {
+        //     BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
+        //     return;
+        // }
 
         if (StringUtils.hasText(token) && !tokenProvider.validateToken(token, isRefresh)) {
             BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
@@ -76,6 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean shouldSkipFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         return path.startsWith("/api/v1/auth/")
+            && !path.equals("/api/v1/auth/signout")
             || path.startsWith("/api/v1/email/")
             || path.startsWith("/v3/api-docs")
             || path.startsWith("/swagger-ui")

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>HackPlay — 인증번호 안내</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f7ff;font-family:'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',sans-serif;line-height:1.5;color:#1f2937;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f5f7ff;padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:white;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);overflow:hidden;">
+            
+            <!-- Header -->
+            <tr>
+              <td style="background:linear-gradient(90deg,#6366f1,#4338ca);padding:28px 32px;color:white;">
+                <table width="100%">
+                  <tr>
+                    <td style="font-weight:700;font-size:22px;">
+                      HackPlay
+                    </td>
+                    <td align="right" style="font-size:14px;font-weight:500;opacity:0.9;">
+                      보안 인증 메일
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding:36px 32px;text-align:center;">
+                <p style="font-size:18px;font-weight:600;margin-bottom:8px;">안녕하세요 👋</p>
+                <p style="font-size:15px;color:#4b5563;margin-bottom:24px;">
+                  HackPlay 서비스 이용을 위한 인증번호가 발송되었습니다.<br>
+                  아래 <strong style="color:#4338ca;">6자리 인증번호</strong>를 입력해 주세요.
+                </p>
+
+                <!-- Code Box -->
+                <div style="display:inline-block;background:#eef2ff;padding:16px 24px;border-radius:12px;border:1px solid #c7d2fe;margin-bottom:24px;">
+                  <span style="font-size:28px;font-weight:700;letter-spacing:6px;color:#4338ca;" th:text="${code}">123456</span>
+                </div>
+
+                <!-- CTA -->
+                <div>
+                  <a th:href="@{https://hackplay.co.kr}" target="_blank"
+                    style="display:inline-block;background:linear-gradient(90deg,#6366f1,#4f46e5);color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;box-shadow:0 4px 12px rgba(99,102,241,0.3);">
+                    HackPlay 바로가기
+                  </a>
+                </div>
+
+                <!-- Notice -->
+                <p style="font-size:13px;color:#6b7280;margin-top:28px;line-height:1.6;">
+                  인증번호는 발송 시점으로부터 <strong>30분</strong>간 유효합니다.<br>
+                  요청하지 않은 인증 메일이라면 이 메시지를 무시하셔도 됩니다.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Divider -->
+            <tr>
+              <td style="height:1px;background:#e5e7eb;"></td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding:24px 32px;background:#f9fafb;font-size:13px;color:#6b7280;">
+                <table width="100%">
+                  <tr>
+                    <td>
+                      © 2025 HackPlay. All rights reserved.
+                    </td>
+                    <td align="right">
+                      <a style="color:#4f46e5;text-decoration:none;">고객지원</a>
+                      <a style="color:#4f46e5;text-decoration:none;">이용약관</a>
+                      <a style="color:#4f46e5;text-decoration:none;">개인정보처리방침</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

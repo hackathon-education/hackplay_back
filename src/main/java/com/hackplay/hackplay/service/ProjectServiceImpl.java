@@ -1,9 +1,12 @@
 package com.hackplay.hackplay.service;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -45,12 +48,57 @@ public class ProjectServiceImpl implements ProjectService {
     @Transactional
     public void create(ProjectCreateReqDto projectCreateReqDto) throws IOException, InterruptedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
+        String memberUuid = (String) authentication.getPrincipal();
 
-        Member member = memberRepository.findByUuid(uuid)
+        Member member = memberRepository.findByUuid(memberUuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
+        UUID projectUuid = UUID.randomUUID();
+
+        Path projectPath = Paths
+                .get(projectsBasePath, projectUuid.toString())
+                .toAbsolutePath();
+
+        String scriptPath = Paths.get(
+                scriptsBasePath,
+                "create-" + projectCreateReqDto.getTemplateType() + ".sh"
+        ).toAbsolutePath().toString();
+
+        if (!Files.exists(Paths.get(scriptPath))) {
+            throw new BaseException(BaseResponseStatus.SCRIPT_NOT_FOUND);
+        }
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "bash",
+                scriptPath,
+                projectPath.toString(),
+                projectCreateReqDto.getName()
+        );
+
+        pb.environment().put(
+                "PATH",
+                "/usr/local/bin:/usr/bin:/bin:" + System.getenv("PATH")
+        );
+
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("[SCRIPT] " + line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
+        }
+
         Project project = Project.builder()
+                .uuid(projectUuid)
                 .name(projectCreateReqDto.getName())
                 .description(projectCreateReqDto.getDescription())
                 .templateType(projectCreateReqDto.getTemplateType())
@@ -61,27 +109,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepository.save(project);
 
-        Path projectPath = Paths.get(projectsBasePath, project.getUuid().toString()).toAbsolutePath();
-
-        String scriptPath = scriptsBasePath + "/create-" + projectCreateReqDto.getTemplateType() + ".sh";
-
-        if (!Files.exists(Paths.get(scriptPath))) {
-            throw new BaseException(BaseResponseStatus.SCRIPT_NOT_FOUND);
-        }
-
-        ProcessBuilder pb = new ProcessBuilder(
-            "sh", scriptPath,
-            projectPath.toString(),
-            project.getName()
+        memberProgressRepository.save(
+                MemberProgress.builder()
+                        .member(member)
+                        .project(project)
+                        .build()
         );
-        pb.inheritIO().start().waitFor();
-
-        MemberProgress progress = MemberProgress.builder()
-                .member(member)
-                .project(project)
-                .build();
-
-        memberProgressRepository.save(progress);
     }
 
     @Override

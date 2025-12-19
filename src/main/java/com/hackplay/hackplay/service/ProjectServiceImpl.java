@@ -46,7 +46,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public void create(ProjectCreateReqDto projectCreateReqDto) throws IOException, InterruptedException {
+    public void create(ProjectCreateReqDto projectCreateReqDto)
+            throws IOException, InterruptedException {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String memberUuid = (String) authentication.getPrincipal();
 
@@ -69,15 +71,11 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         ProcessBuilder pb = new ProcessBuilder(
+                "docker", "exec", "hackplay-generator",
                 "bash",
                 scriptPath,
                 projectPath.toString(),
                 projectCreateReqDto.getName()
-        );
-
-        pb.environment().put(
-                "PATH",
-                "/usr/local/bin:/usr/bin:/bin:" + System.getenv("PATH")
         );
 
         pb.redirectErrorStream(true);
@@ -88,7 +86,7 @@ public class ProjectServiceImpl implements ProjectService {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println("[SCRIPT] " + line);
+                System.out.println("[GENERATOR] " + line);
             }
         }
 

@@ -62,8 +62,8 @@ public class Project {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Project(String name, String description, String templateType, Boolean isPublic, Member member, CommonEnums.Lecture lecture) {
-        this.uuid = UUID.randomUUID().toString();
+    public Project(UUID uuid, String name, String description, String templateType, Boolean isPublic, Member member, CommonEnums.Lecture lecture) {
+        this.uuid = uuid.toString();
         this.name = name;
         this.description = description;
         this.lecture = lecture;

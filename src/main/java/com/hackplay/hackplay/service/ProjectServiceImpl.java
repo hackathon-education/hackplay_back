@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.file.*;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,9 @@ import com.hackplay.hackplay.repository.MemberRepository;
 import com.hackplay.hackplay.repository.ProjectRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -57,44 +60,95 @@ public class ProjectServiceImpl implements ProjectService {
 
         UUID projectUuid = UUID.randomUUID();
 
+        // 호스트 경로 (파일 존재 확인 및 DB 저장용)
         Path projectPath = Paths
                 .get(projectsBasePath, projectUuid.toString())
                 .toAbsolutePath();
 
-        String scriptPath = Paths.get(
+        // 컨테이너 내부 경로 사용
+        String containerScriptPath = "/scripts/create-" + projectCreateReqDto.getTemplateType() + ".sh";
+        String containerProjectPath = "/projects/" + projectUuid.toString();
+
+        // 호스트에서 스크립트 파일 존재 확인 (선택사항)
+        String hostScriptPath = Paths.get(
                 scriptsBasePath,
                 "create-" + projectCreateReqDto.getTemplateType() + ".sh"
         ).toAbsolutePath().toString();
 
-        if (!Files.exists(Paths.get(scriptPath))) {
+        if (!Files.exists(Paths.get(hostScriptPath))) {
             throw new BaseException(BaseResponseStatus.SCRIPT_NOT_FOUND);
         }
 
+        // Docker 명령어 실행을 위한 ProcessBuilder 설정 (컨테이너 내부 경로 사용)
         ProcessBuilder pb = new ProcessBuilder(
-                "docker", "exec", "hackplay-generator",
-                "bash",
-                scriptPath,
-                projectPath.toString(),
+                "/usr/bin/docker", "exec",
+                "-i",
+                "-w", "/",
+                "hackplay-generator",
+                "/bin/bash",
+                containerScriptPath,
+                containerProjectPath,
                 projectCreateReqDto.getName()
         );
 
+        // 환경 변수 설정
+        Map<String, String> env = pb.environment();
+        env.put("DOCKER_HOST", "unix:///var/run/docker.sock");
+        env.put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+
         pb.redirectErrorStream(true);
+
+        log.info("Starting project creation for: {}", projectCreateReqDto.getName());
+        log.info("Project UUID: {}", projectUuid);
+        log.info("Host project path: {}", projectPath);
+        log.info("Host script path: {}", hostScriptPath);
+        log.info("Container script path: {}", containerScriptPath);
+        log.info("Container project path: {}", containerProjectPath);
+        log.info("Command: {}", String.join(" ", pb.command()));
+
         Process process = pb.start();
 
+        // 프로세스 출력 로깅
+        StringBuilder output = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()))) {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println("[GENERATOR] " + line);
+                log.info("[GENERATOR] {}", line);
+                output.append(line).append("\n");
             }
         }
 
         int exitCode = process.waitFor();
+        log.info("Process exit code: {}", exitCode);
+
         if (exitCode != 0) {
+            log.error("Project creation script failed with exit code: {}", exitCode);
+            log.error("Script output: {}", output.toString());
             throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
         }
 
+        // 프로젝트 폴더가 실제로 생성되었는지 확인
+        if (!Files.exists(projectPath)) {
+            log.error("Project directory was not created: {}", projectPath);
+            throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
+        }
+
+        // 프로젝트 폴더에 기본 파일들이 있는지 확인 (추가 검증)
+        try {
+            long fileCount = Files.list(projectPath).count();
+            if (fileCount == 0) {
+                log.error("Project directory is empty: {}", projectPath);
+                throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
+            }
+            log.info("Project created successfully with {} files/directories", fileCount);
+        } catch (IOException e) {
+            log.error("Error checking project directory contents: {}", e.getMessage());
+            throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
+        }
+
+        // 데이터베이스에 프로젝트 저장
         Project project = Project.builder()
                 .uuid(projectUuid)
                 .name(projectCreateReqDto.getName())
@@ -113,11 +167,12 @@ public class ProjectServiceImpl implements ProjectService {
                         .project(project)
                         .build()
         );
+
+        log.info("Project created and saved to database successfully: {}", projectCreateReqDto.getName());
     }
 
     @Override
     public List<ProjectRespDto> getProjects() {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String uuid = (String) authentication.getPrincipal();
 
@@ -135,6 +190,7 @@ public class ProjectServiceImpl implements ProjectService {
                 })
                 .collect(Collectors.toList());
     }
+
     @Override
     public ProjectRespDto getProject(Long projectId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -143,7 +199,8 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
-        Member member = memberRepository.findByUuid(uuid).orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         MemberProgress progress = memberProgressRepository.findByMemberAndProject(
                 member,
@@ -160,7 +217,11 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
-        project.updateProjectInfo(projectUpdateReqDto.getName(), projectUpdateReqDto.getDescription(), projectUpdateReqDto.getIsPublic());
+        project.updateProjectInfo(
+                projectUpdateReqDto.getName(),
+                projectUpdateReqDto.getDescription(),
+                projectUpdateReqDto.getIsPublic()
+        );
     }
 
     @Override
@@ -168,7 +229,7 @@ public class ProjectServiceImpl implements ProjectService {
     public void delete(Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
-                
+
         Path projectPath = Paths.get(projectsBasePath, project.getUuid().toString());
         if (Files.exists(projectPath)) {
             try {

@@ -78,11 +78,14 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:8080",
-            "http://localhost:5173"
+            "http://localhost:5173",
+	    "https://hackplay.co.kr",
+	    "https://www.hackplay.co.kr"
         ));
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setExposedHeaders(List.of("Authorization"));
+	config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

@@ -50,22 +50,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             token = (raw != null) ? raw.replaceAll("\\s+", "") : null;
         }
 
-        // 1. 토큰이 아예 없으면 → 인증 시도 없이 다음 필터로 넘김 (로그인 API 포함)
-        // if (!StringUtils.hasText(token)) {
-        //     filterChain.doFilter(request, response);
-        //     return;
-        // }
+        //1. 토큰이 아예 없으면 → 인증 시도 없이 다음 필터로 넘김 (로그인 API 포함)
+        if (!StringUtils.hasText(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        // // 2. 토큰이 있으나 잘못된 경우
-        // if (!tokenProvider.validateToken(token, isRefresh)) {
-        //     BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
-        //     return;
-        // }
-
-        if (StringUtils.hasText(token) && !tokenProvider.validateToken(token, isRefresh)) {
+        // 2. 토큰이 있으나 잘못된 경우
+        if (!tokenProvider.validateToken(token, isRefresh)) {
             BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
             return;
         }
+
+        // if (StringUtils.hasText(token) && !tokenProvider.validateToken(token, isRefresh)) {
+           //  BaseException.sendErrorResponse(response, BaseResponseStatus.TOKEN_EXPIRED);
+            // return;
+        /// }
 
         if (!isRefresh) { // Access Token만 인증 처리
             var claims = tokenProvider.getClaims(token);
@@ -87,20 +87,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     private boolean shouldSkipFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.startsWith("/api/v1/auth/")
-            && !path.equals("/api/v1/auth/signout")
-            || path.startsWith("/api/v1/email/")
-            || path.startsWith("/v3/api-docs")
+
+            // 인증 관련 (로그아웃 제외)
+        if (path.startsWith("/api/v1/auth/") && !path.equals("/api/v1/auth/signout")) {
+            return true;
+        }
+
+        // 이메일 인증
+        if (path.startsWith("/api/v1/email/")) {
+            return true;
+        }
+
+        // Swagger
+        if (path.startsWith("/v3/api-docs")
             || path.startsWith("/swagger-ui")
-            || path.equals("/swagger-ui.html")
-            || path.startsWith("/editor/")
+            || path.equals("/swagger-ui.html")) {
+            return true;
+        }
+
+        // 정적/기타
+        if (path.startsWith("/editor/")
             || path.startsWith("/ws/")
-            || path.startsWith("/login.html")
-            || path.startsWith("/projects.html")
+            || path.equals("/login.html")
+            || path.equals("/projects.html")
             || path.startsWith("/js/")
             || path.startsWith("/css/")
             || path.startsWith("/images/")
-            || path.equals("/favicon.ico")
-            || path.startsWith("/static/");
+            || path.startsWith("/static/")
+            || path.equals("/favicon.ico")) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -13,3 +13,6 @@ bin/
 
 # === 환경 변수/비밀 ===
 .env
+
+# Docker
+Dockerfile

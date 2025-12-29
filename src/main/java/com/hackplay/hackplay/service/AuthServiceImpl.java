@@ -77,7 +77,7 @@ public class AuthServiceImpl implements AuthService{
         // 회원 리프레쉬 토큰 및 마지막 로그인 시점 DB 저장.
         member.signinUpdate(refreshToken);
 
-        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken, refreshToken);
+        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken);
     
         return signinRespDto;
     }

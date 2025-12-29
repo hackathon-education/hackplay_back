@@ -14,11 +14,14 @@ import com.hackplay.hackplay.common.CommonEnums;
 import com.hackplay.hackplay.config.jwt.TokenProvider;
 import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.dto.ReissueRespDto;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
+import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -62,7 +65,7 @@ public class AuthServiceImpl implements AuthService{
     
     @Override
     @Transactional
-    public SigninRespDto signin(SigninReqDto signinReqDto){
+    public SigninResultRespDto signin(SigninReqDto signinReqDto){
 
         // 회원 존재 X
         Member member = memberRepository.findByEmail(signinReqDto.getEmail());
@@ -77,9 +80,12 @@ public class AuthServiceImpl implements AuthService{
         // 회원 리프레쉬 토큰 및 마지막 로그인 시점 DB 저장.
         member.signinUpdate(refreshToken);
 
-        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken, refreshToken);
+        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken);
     
-        return signinRespDto;
+        return new SigninResultRespDto(
+            signinRespDto,
+            refreshToken
+        );
     }
 
     @Override
@@ -93,5 +99,34 @@ public class AuthServiceImpl implements AuthService{
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         member.signoutUpdate();
+    }
+
+    @Override
+    @Transactional
+    public ReissueRespDto reissue(String refreshToken) {
+        // 토큰 존재 검증
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BaseException(BaseResponseStatus.INVALID_TOKEN);
+        }
+
+        // refreshToken 검증 (만료 + DB 일치)
+        if (!tokenProvider.validateToken(refreshToken, true)) {
+            throw new BaseException(BaseResponseStatus.TOKEN_EXPIRED);
+        }
+
+        // uuid 추출
+        String uuid = tokenProvider.getClaims(refreshToken).getSubject();
+
+        // 새 토큰 발급
+        String newAccessToken = tokenProvider.createAccessToken(uuid);
+        String newRefreshToken = tokenProvider.createRefreshToken(uuid);
+
+        // DB refreshToken 교체 (이전 토큰 폐기)
+        Member member = memberRepository.findByUuid(uuid)
+            .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+        member.signinUpdate(newRefreshToken);
+
+        // 둘 다 반환
+        return new ReissueRespDto(newAccessToken, newRefreshToken);
     }
 }

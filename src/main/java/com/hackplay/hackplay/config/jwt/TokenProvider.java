@@ -89,6 +89,8 @@ public class TokenProvider {
             }
 
             return true;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return false;
         } catch (Exception e) {
             return false;
         }

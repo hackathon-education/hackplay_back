@@ -14,12 +14,14 @@ import com.hackplay.hackplay.common.CommonEnums;
 import com.hackplay.hackplay.config.jwt.TokenProvider;
 import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
+import com.hackplay.hackplay.dto.AccessTokenRespDto;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -97,5 +99,29 @@ public class AuthServiceImpl implements AuthService{
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
         member.signoutUpdate();
+    }
+
+    @Override
+    @Transactional
+    public AccessTokenRespDto reissue(String refreshToken) {
+        // refreshToken 존재 여부
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BaseException(BaseResponseStatus.INVALID_TOKEN);
+        }
+
+        // refreshToken 검증 (만료 + DB 일치 여부)
+        boolean isValid = tokenProvider.validateToken(refreshToken, true);
+        if (!isValid) {
+            throw new BaseException(BaseResponseStatus.TOKEN_EXPIRED);
+        }
+
+        // refreshToken에서 uuid 추출
+        Claims claims = tokenProvider.getClaims(refreshToken);
+        String uuid = claims.getSubject();
+
+        // accessToken 재발급
+        String newAccessToken = tokenProvider.createAccessToken(uuid);
+
+        return new AccessTokenRespDto(newAccessToken);
     }
 }

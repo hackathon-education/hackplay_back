@@ -2,12 +2,14 @@ package com.hackplay.hackplay.controller;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackplay.hackplay.common.ApiResponse;
+import com.hackplay.hackplay.dto.AccessTokenRespDto;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SigninResultRespDto;
@@ -53,4 +55,10 @@ public class AuthController {
         authService.signout();
         return ApiResponse.success();
     }
+
+    @PostMapping("/reissue")
+    public ApiResponse<AccessTokenRespDto> reissue(@CookieValue("refreshToken") String refreshToken) {
+        return ApiResponse.success(authService.reissue(refreshToken));
+    }
+
 }

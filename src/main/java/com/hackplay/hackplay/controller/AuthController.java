@@ -51,7 +51,17 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ApiResponse<Void> signout(){
+    public ApiResponse<Void> signout(HttpServletResponse response){
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .path("/")
+            .maxAge(0)
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+
         authService.signout();
         return ApiResponse.success();
     }

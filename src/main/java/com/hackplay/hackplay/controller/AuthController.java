@@ -1,5 +1,7 @@
 package com.hackplay.hackplay.controller;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,9 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hackplay.hackplay.common.ApiResponse;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
+import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.service.AuthService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,8 +32,20 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public ApiResponse<SigninRespDto> signin(@Valid @RequestBody SigninReqDto signinReqDto){
-        return ApiResponse.success(authService.signin(signinReqDto));
+    public ApiResponse<SigninRespDto> signin(@Valid @RequestBody SigninReqDto signinReqDto, HttpServletResponse response){
+        SigninResultRespDto signinResultRespDto = authService.signin(signinReqDto);    
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", signinResultRespDto.getRefreshToken())
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .path("/")
+            .maxAge(60 * 60 * 24 * 7) // 7일
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        
+        return ApiResponse.success(signinResultRespDto.getSigninRespDto());
     }
 
     @PostMapping("/signout")

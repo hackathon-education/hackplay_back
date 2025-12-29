@@ -16,6 +16,7 @@ import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
+import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 
@@ -62,7 +63,7 @@ public class AuthServiceImpl implements AuthService{
     
     @Override
     @Transactional
-    public SigninRespDto signin(SigninReqDto signinReqDto){
+    public SigninResultRespDto signin(SigninReqDto signinReqDto){
 
         // 회원 존재 X
         Member member = memberRepository.findByEmail(signinReqDto.getEmail());
@@ -79,7 +80,10 @@ public class AuthServiceImpl implements AuthService{
 
         SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken);
     
-        return signinRespDto;
+        return new SigninResultRespDto(
+            signinRespDto,
+            refreshToken
+        );
     }
 
     @Override

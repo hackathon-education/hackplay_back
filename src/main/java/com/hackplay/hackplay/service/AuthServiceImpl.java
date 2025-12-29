@@ -14,7 +14,7 @@ import com.hackplay.hackplay.common.CommonEnums;
 import com.hackplay.hackplay.config.jwt.TokenProvider;
 import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
-import com.hackplay.hackplay.dto.AccessTokenRespDto;
+import com.hackplay.hackplay.dto.ReissueRespDto;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SigninResultRespDto;
@@ -103,25 +103,30 @@ public class AuthServiceImpl implements AuthService{
 
     @Override
     @Transactional
-    public AccessTokenRespDto reissue(String refreshToken) {
-        // refreshToken 존재 여부
+    public ReissueRespDto reissue(String refreshToken) {
+        // 토큰 존재 검증
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BaseException(BaseResponseStatus.INVALID_TOKEN);
         }
 
-        // refreshToken 검증 (만료 + DB 일치 여부)
-        boolean isValid = tokenProvider.validateToken(refreshToken, true);
-        if (!isValid) {
+        // refreshToken 검증 (만료 + DB 일치)
+        if (!tokenProvider.validateToken(refreshToken, true)) {
             throw new BaseException(BaseResponseStatus.TOKEN_EXPIRED);
         }
 
-        // refreshToken에서 uuid 추출
-        Claims claims = tokenProvider.getClaims(refreshToken);
-        String uuid = claims.getSubject();
+        // uuid 추출
+        String uuid = tokenProvider.getClaims(refreshToken).getSubject();
 
-        // accessToken 재발급
+        // 새 토큰 발급
         String newAccessToken = tokenProvider.createAccessToken(uuid);
+        String newRefreshToken = tokenProvider.createRefreshToken(uuid);
 
-        return new AccessTokenRespDto(newAccessToken);
+        // DB refreshToken 교체 (이전 토큰 폐기)
+        Member member = memberRepository.findByUuid(uuid)
+            .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+        member.signinUpdate(newRefreshToken);
+
+        // 둘 다 반환
+        return new ReissueRespDto(newAccessToken, newRefreshToken);
     }
 }

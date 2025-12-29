@@ -9,11 +9,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackplay.hackplay.common.ApiResponse;
-import com.hackplay.hackplay.dto.AccessTokenRespDto;
+import com.hackplay.hackplay.dto.ReissueRespDto;
 import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
+import com.hackplay.hackplay.dto.TokenRespDto;
 import com.hackplay.hackplay.service.AuthService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -67,8 +68,20 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public ApiResponse<AccessTokenRespDto> reissue(@CookieValue("refreshToken") String refreshToken) {
-        return ApiResponse.success(authService.reissue(refreshToken));
+    public ApiResponse<TokenRespDto> reissue(@CookieValue("refreshToken") String refreshToken, HttpServletResponse response) {
+        ReissueRespDto reissueRespDto = authService.reissue(refreshToken);
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", reissueRespDto.getRefreshToken())
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .path("/")
+            .maxAge(60 * 60 * 24 * 7)
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        
+        return ApiResponse.success(new TokenRespDto(reissueRespDto.getAccessToken()));
     }
 
 }

@@ -21,7 +21,6 @@ import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
 import com.hackplay.hackplay.repository.MemberRepository;
 
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 
 @Service

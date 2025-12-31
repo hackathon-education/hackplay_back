@@ -1,5 +1,6 @@
 package com.hackplay.hackplay.dto;
 
+import com.hackplay.hackplay.common.CommonEnums;
 import com.hackplay.hackplay.domain.Project;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,6 +13,7 @@ public class ProjectRespDto {
     private Long id;
     private String name;
     private String description;
+    private CommonEnums.Lecture lecture;
     private String templateType;
     private Boolean isPublic;
     private String nickname;
@@ -24,6 +26,7 @@ public class ProjectRespDto {
                 .id(project.getId())
                 .name(project.getName())
                 .description(project.getDescription())
+                .lecture(project.getLecture())
                 .templateType(project.getTemplateType())
                 .isPublic(project.getIsPublic())
                 .nickname(project.getMember().getNickname())

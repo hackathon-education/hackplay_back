@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hackplay.hackplay.common.ApiResponse;
+import com.hackplay.hackplay.common.CommonEnums.Lecture;
+import com.hackplay.hackplay.dto.LectureProgressRespDto;
 import com.hackplay.hackplay.dto.ProjectCreateReqDto;
 import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
@@ -32,6 +34,12 @@ public class ProjectController {
     public ApiResponse<Void> createProject(@Valid @RequestBody ProjectCreateReqDto projectCreateReqDto) throws IOException, InterruptedException {
         projectService.create(projectCreateReqDto);
         return ApiResponse.success();
+    }
+
+    @GetMapping("/lectures/{lectureId}/progress")
+    public ApiResponse<LectureProgressRespDto> getLectureProgress(@PathVariable("lectureId") int lectureId) {
+        Lecture lecture = Lecture.fromId(lectureId);
+        return ApiResponse.success(projectService.getLectureProgress(lecture));
     }
 
     @GetMapping

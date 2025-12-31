@@ -4,8 +4,10 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.LectureAttributeConverter;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -14,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +24,12 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "project")
+@Table(
+    name = "project",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"member_id", "lecture"})
+    }
+)
 @NoArgsConstructor(access =  AccessLevel.PROTECTED)
 public class Project {
     
@@ -39,7 +47,7 @@ public class Project {
     @Column(name = "description", length = 500)
     private String description;
 
-    @Column(name = "lecture", length = 500)
+    @Column(name = "lecture", nullable = false)
     private CommonEnums.Lecture lecture;
 
     @Column(name = "template_type", nullable = false, length = 50)

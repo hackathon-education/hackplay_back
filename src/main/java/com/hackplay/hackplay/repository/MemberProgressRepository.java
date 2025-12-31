@@ -11,6 +11,6 @@ import com.hackplay.hackplay.domain.Project;
 
 @Repository
 public interface MemberProgressRepository  extends JpaRepository<MemberProgress, Long>{
-
+    void deleteByProject(Project project);
     Optional<MemberProgress> findByMemberAndProject(Member member, Project project);
 }

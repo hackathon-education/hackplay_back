@@ -10,17 +10,15 @@ import lombok.Data;
 @Builder
 public class SigninRespDto {
     private String accessToken;
-    private String refreshToken;
     private String nickname;
     private String email;
     private boolean isEmailVerified;
     private String profileImageUrl;
     private CommonEnums.Role role;
 
-    public static SigninRespDto entityToDto(Member member, String accessToken, String refreshToken) {
+    public static SigninRespDto entityToDto(Member member, String accessToken) {
         return SigninRespDto.builder()
             .accessToken(accessToken)
-            .refreshToken(refreshToken)
             .nickname(member.getNickname())
             .email(member.getEmail())
             .isEmailVerified(member.isEmailVerified())

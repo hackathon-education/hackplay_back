@@ -1,5 +1,7 @@
 package com.hackplay.hackplay.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public class CommonEnums {
     public enum Role {
         PLAN("기획"),
@@ -67,22 +69,29 @@ public class CommonEnums {
 
     public enum Lecture {
         PROJECT(
+            1,
             "실전 프로젝트 해보기",
             4,
             Role.FRONT,
             Level.INTERMEDIATE
         );
 
-        private final String title;       // 강의명
-        private final int totalWeek;      // 전체 주차 수
-        private final Role role;          // 담당 역할(Front/Back/Full/공통 등)
-        private final Level level;        // 난이도(초급/중급/고급)
+        private final int id;
+        private final String title;
+        private final int totalWeek;
+        private final Role role;
+        private final Level level;
 
-        Lecture(String title, int totalWeek, Role role, Level level) {
+        Lecture(int id, String title, int totalWeek, Role role, Level level) {
+            this.id = id;
             this.title = title;
             this.totalWeek = totalWeek;
             this.role = role;
             this.level = level;
+        }
+
+        public int getId() {
+            return id;
         }
 
         public String getTitle() {
@@ -100,6 +109,20 @@ public class CommonEnums {
         public Level getLevel() {
             return level;
         }
+
+        @JsonCreator
+        public static Lecture fromJson(int id) {
+            return fromId(id);
+        }
+
+        public static Lecture fromId(int id) {
+            for (Lecture lecture : values()) {
+                if (lecture.id == id) {
+                    return lecture;
+                }
+            }
+            throw new IllegalArgumentException("Invalid lecture id: " + id);
+        }
     }
 
     public enum Level {
@@ -107,4 +130,11 @@ public class CommonEnums {
         INTERMEDIATE,
         ADVANCED
     }
+
+    public enum WeekProgressStatus {
+        COMPLETED,
+        IN_PROGRESS,
+        NOT_STARTED
+    }
+
 }

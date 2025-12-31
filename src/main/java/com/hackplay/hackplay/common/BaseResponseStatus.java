@@ -41,6 +41,7 @@ public enum BaseResponseStatus {
     PROJECT_CREATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 생성에 실패했습니다."),
     PROJECT_DELETION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 삭제에 실패했습니다."),
     PROJECT_START_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로젝트 실행에 실패했습니다."),
+    PROJECT_ALREADY_EXISTS_FOR_LECTURE(HttpStatus.CONFLICT, "이미 해당 강의에 대한 프로젝트가 존재합니다."),
     
     // ===================== Template ERROR =====================
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "템플릿을 찾을 수 없습니다."),

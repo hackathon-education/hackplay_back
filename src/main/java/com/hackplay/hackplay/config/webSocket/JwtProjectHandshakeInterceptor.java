@@ -5,6 +5,8 @@ import com.hackplay.hackplay.service.ProjectWorkspaceService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServerHttpRequest;
@@ -22,6 +24,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
 
     private final TokenProvider tokenProvider;
@@ -34,9 +37,10 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes
     ) {
-
+        log.info("WS handshake start: {}", request.getURI());
         // ===== 1. projectId 쿼리 파라미터 =====
         String projectIdStr = getQueryParam(request, "projectId");
+        log.info("projectId param = {}", projectIdStr);
         if (!StringUtils.hasText(projectIdStr)) {
             response.setStatusCode(HttpStatus.BAD_REQUEST);
             return false;
@@ -55,6 +59,7 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
                 ((ServletServerHttpRequest) request).getServletRequest();
 
         String accessToken = getCookie(servletRequest, "accessToken");
+        log.info("accessToken present = {}", accessToken != null);
         if (!StringUtils.hasText(accessToken)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
@@ -68,6 +73,7 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
 
         // ===== 4. uuid 추출 =====
         String uuid = tokenProvider.getClaims(accessToken).getSubject();
+        log.info("uuid = {}", uuid);
         if (!StringUtils.hasText(uuid)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
@@ -77,7 +83,9 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
         Path projectRoot;
         try {
             projectRoot = workspaceService.resolveProjectRoot(projectId, uuid);
+            log.info("projectRoot resolved = {}", projectRoot);
         } catch (Exception e) {
+            log.error("❌ resolveProjectRoot failed: projectId={}, uuid={}", projectId, uuid, e);
             response.setStatusCode(HttpStatus.FORBIDDEN);
             return false;
         }
@@ -87,6 +95,7 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
         attributes.put("projectId", projectId);
         attributes.put("projectRoot", projectRoot);
 
+        log.info("WS handshake success");
         return true;
     }
 

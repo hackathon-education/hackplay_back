@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,14 +52,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public void create(ProjectCreateReqDto projectCreateReqDto)
+    public void create(String memberUuid, ProjectCreateReqDto projectCreateReqDto)
             throws IOException, InterruptedException {
-
-        // ===============================
-        // 인증 사용자
-        // ===============================
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String memberUuid = (String) authentication.getPrincipal();
 
         Member member = memberRepository.findByUuid(memberUuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
@@ -222,137 +214,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .toLowerCase();
     }
 
-    // public void create(ProjectCreateReqDto projectCreateReqDto)
-    //         throws IOException, InterruptedException {
-
-    //     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    //     String memberUuid = (String) authentication.getPrincipal();
-
-    //     Member member = memberRepository.findByUuid(memberUuid)
-    //             .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
-
-    //     if (projectRepository.existsByMemberAndLecture(member, projectCreateReqDto.getLecture())) {
-    //         throw new BaseException(BaseResponseStatus.PROJECT_ALREADY_EXISTS_FOR_LECTURE);
-    //     }
-
-    //     UUID projectUuid = UUID.randomUUID();
-
-    //     // 호스트 경로 (파일 존재 확인 및 DB 저장용)
-    //     Path projectPath = Paths
-    //             .get(projectsBasePath, projectUuid.toString())
-    //             .toAbsolutePath();
-
-    //     // 컨테이너 내부 경로 사용
-    //     String containerScriptPath = "/scripts/create-" + projectCreateReqDto.getTemplateType() + ".sh";
-    //     String containerProjectPath = "/projects/" + projectUuid.toString();
-
-    //     // 호스트에서 스크립트 파일 존재 확인
-    //     String hostScriptPath = Paths.get(
-    //             scriptsBasePath,
-    //             "create-" + projectCreateReqDto.getTemplateType() + ".sh"
-    //     ).toAbsolutePath().toString();
-
-    //     if (!Files.exists(Paths.get(hostScriptPath))) {
-    //         throw new BaseException(BaseResponseStatus.SCRIPT_NOT_FOUND);
-    //     }
-
-    //     // Docker 명령어 실행을 위한 ProcessBuilder 설정 (컨테이너 내부 경로 사용)
-    //     ProcessBuilder pb = new ProcessBuilder(
-    //             "/usr/bin/docker", "exec",
-    //             "-i",
-    //             "-w", "/",
-    //             "hackplay-generator",
-    //             "/bin/bash",
-    //             containerScriptPath,
-    //             containerProjectPath,
-    //             projectCreateReqDto.getName()
-    //     );
-
-    //     // 환경 변수 설정
-    //     Map<String, String> env = pb.environment();
-    //     env.put("DOCKER_HOST", "unix:///var/run/docker.sock");
-    //     env.put("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
-
-    //     pb.redirectErrorStream(true);
-
-    //     log.info("Starting project creation for: {}", projectCreateReqDto.getName());
-    //     log.info("Project UUID: {}", projectUuid);
-    //     log.info("Host project path: {}", projectPath);
-    //     log.info("Host script path: {}", hostScriptPath);
-    //     log.info("Container script path: {}", containerScriptPath);
-    //     log.info("Container project path: {}", containerProjectPath);
-    //     log.info("Command: {}", String.join(" ", pb.command()));
-
-    //     Process process = pb.start();
-
-    //     // 프로세스 출력 로깅
-    //     StringBuilder output = new StringBuilder();
-    //     try (BufferedReader reader = new BufferedReader(
-    //             new InputStreamReader(process.getInputStream()))) {
-
-    //         String line;
-    //         while ((line = reader.readLine()) != null) {
-    //             log.info("[GENERATOR] {}", line);
-    //             output.append(line).append("\n");
-    //         }
-    //     }
-
-    //     int exitCode = process.waitFor();
-    //     log.info("Process exit code: {}", exitCode);
-
-    //     if (exitCode != 0) {
-    //         log.error("Project creation script failed with exit code: {}", exitCode);
-    //         log.error("Script output: {}", output.toString());
-    //         throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
-    //     }
-
-    //     // 프로젝트 폴더가 실제로 생성되었는지 확인
-    //     if (!Files.exists(projectPath)) {
-    //         log.error("Project directory was not created: {}", projectPath);
-    //         throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
-    //     }
-
-    //     // 프로젝트 폴더에 기본 파일들이 있는지 확인 (추가 검증)
-    //     try {
-    //         long fileCount = Files.list(projectPath).count();
-    //         if (fileCount == 0) {
-    //             log.error("Project directory is empty: {}", projectPath);
-    //             throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
-    //         }
-    //         log.info("Project created successfully with {} files/directories", fileCount);
-    //     } catch (IOException e) {
-    //         log.error("Error checking project directory contents: {}", e.getMessage());
-    //         throw new BaseException(BaseResponseStatus.PROJECT_CREATION_FAILED);
-    //     }
-
-    //     // 데이터베이스에 프로젝트 저장
-    //     Project project = Project.builder()
-    //             .uuid(projectUuid)
-    //             .name(projectCreateReqDto.getName())
-    //             .description(projectCreateReqDto.getDescription())
-    //             .templateType(projectCreateReqDto.getTemplateType())
-    //             .isPublic(projectCreateReqDto.getIsPublic())
-    //             .lecture(projectCreateReqDto.getLecture())
-    //             .member(member)
-    //             .build();
-
-    //     projectRepository.save(project);
-
-    //     memberProgressRepository.save(
-    //             MemberProgress.builder()
-    //                     .member(member)
-    //                     .project(project)
-    //                     .build()
-    //     );
-
-    //     log.info("Project created and saved to database successfully: {}", projectCreateReqDto.getName());
-    // }
-
     @Override
-    public LectureProgressRespDto getLectureProgress(CommonEnums.Lecture lecture) {
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) auth.getPrincipal();
+    public LectureProgressRespDto getLectureProgress(String uuid, CommonEnums.Lecture lecture) {
 
         Member member = memberRepository.findByUuid(uuid)
             .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
@@ -415,10 +278,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 
     @Override
-    public List<ProjectRespDto> getProjects() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
-
+    public List<ProjectRespDto> getProjects(String uuid) {
         Member member = memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
@@ -435,9 +295,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public ProjectRespDto getProject(Long projectId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String)authentication.getPrincipal();
+    public ProjectRespDto getProject(String uuid, Long projectId) {
 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));

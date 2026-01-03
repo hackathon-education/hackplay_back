@@ -48,7 +48,7 @@ public class SecurityConfig {
             .formLogin(fl -> fl.disable())
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(
-            "/api/v1/auth/signin",
+                        "/api/v1/auth/signin",
                         "/api/v1/auth/signup",
                         "/api/v1/auth/reissue",
                         "/api/v1/email/**",
@@ -80,12 +80,11 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:8080",
             "http://localhost:5173",
-	    "https://hackplay.co.kr",
-	    "https://www.hackplay.co.kr"
+            "https://hackplay.co.kr",
+            "https://www.hackplay.co.kr"
         ));
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
-        config.setExposedHeaders(List.of("Authorization"));
 	    config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -10,10 +10,10 @@ import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
 
 public interface ProjectService {
-    void create(ProjectCreateReqDto request) throws IOException, InterruptedException;
-    LectureProgressRespDto getLectureProgress(CommonEnums.Lecture lecture);
-    List<ProjectRespDto> getProjects();
-    ProjectRespDto getProject(Long projectId);
+    void create(String memberUuid, ProjectCreateReqDto request) throws IOException, InterruptedException;
+    LectureProgressRespDto getLectureProgress(String uuid, CommonEnums.Lecture lecture);
+    List<ProjectRespDto> getProjects(String uuid);
+    ProjectRespDto getProject(String uuid, Long projectId);
     void update(Long projectId, ProjectUpdateReqDto request);
     void delete(Long projectId);
 }

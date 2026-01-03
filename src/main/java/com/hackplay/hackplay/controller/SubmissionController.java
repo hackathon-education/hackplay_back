@@ -3,6 +3,7 @@ package com.hackplay.hackplay.controller;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,20 +29,20 @@ public class SubmissionController {
 
     // 프로젝트 제출
     @PostMapping
-    public ApiResponse<Void> submitProject(@Valid @RequestBody SubmissionReqDto submissionReqDto) throws IOException {
-        submissionService.submit(submissionReqDto);
+    public ApiResponse<Void> submitProject(@Valid @RequestBody SubmissionReqDto submissionReqDto, @AuthenticationPrincipal String uuid) throws IOException {
+        submissionService.submit(uuid, submissionReqDto);
         return ApiResponse.success();
     }
 
     // 내 제출 목록 조회
     @GetMapping("/my")
-    public ApiResponse<List<SubmissionListRespDto>> getMySubmissions() {
-        return ApiResponse.success(submissionService.getMySubmissions());
+    public ApiResponse<List<SubmissionListRespDto>> getMySubmissions(@AuthenticationPrincipal String uuid) {
+        return ApiResponse.success(submissionService.getMySubmissions(uuid));
     }
 
     // 내 제출 상세 조회
     @GetMapping("/{submissionId}")
-    public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId) {
-        return ApiResponse.success(submissionService.getSubmissionDetail(submissionId));
+    public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId, @AuthenticationPrincipal String uuid) {
+        return ApiResponse.success(submissionService.getSubmissionDetail(uuid, submissionId));
     }
 }

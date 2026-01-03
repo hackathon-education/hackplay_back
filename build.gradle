@@ -78,7 +78,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     // pty4j
-    // implementation 'org.jetbrains.pty4j:pty4j:0.12.12'
+    implementation("org.jetbrains.pty4j:pty4j:0.13.11")
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

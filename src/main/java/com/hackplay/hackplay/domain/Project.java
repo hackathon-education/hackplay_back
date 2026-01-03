@@ -4,10 +4,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.hackplay.hackplay.common.CommonEnums;
-import com.hackplay.hackplay.common.LectureAttributeConverter;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -90,4 +88,8 @@ public class Project {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public boolean isAccessibleBy(String uuid) {
+        return member != null
+            && member.getUuid().equals(uuid);
+    }
 }

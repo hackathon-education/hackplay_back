@@ -9,16 +9,14 @@ import lombok.Data;
 @Data
 @Builder
 public class SigninRespDto {
-    private String accessToken;
     private String nickname;
     private String email;
     private boolean isEmailVerified;
     private String profileImageUrl;
     private CommonEnums.Role role;
 
-    public static SigninRespDto entityToDto(Member member, String accessToken) {
+    public static SigninRespDto entityToDto(Member member) {
         return SigninRespDto.builder()
-            .accessToken(accessToken)
             .nickname(member.getNickname())
             .email(member.getEmail())
             .isEmailVerified(member.isEmailVerified())

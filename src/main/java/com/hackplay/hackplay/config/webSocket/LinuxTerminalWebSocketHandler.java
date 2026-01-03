@@ -1,122 +1,127 @@
 package com.hackplay.hackplay.config.webSocket;
 
-import com.hackplay.hackplay.service.ProjectWorkspaceService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pty4j.PtyProcess;
+import com.pty4j.PtyProcessBuilder;
+import com.pty4j.WinSize;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.io.*;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-@Component
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class LinuxTerminalWebSocketHandler extends TextWebSocketHandler {
 
-    private final ProjectWorkspaceService workspaceService;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final Map<String, Process> processes = new ConcurrentHashMap<>();
-    private final Map<String, BufferedWriter> writers = new ConcurrentHashMap<>();
+    private final Map<String, PtyProcess> processes = new ConcurrentHashMap<>();
     private final Map<String, Thread> readerThreads = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+
         String uuid = (String) session.getAttributes().get("uuid");
-        String projectIdStr = (String) session.getAttributes().get("projectId");
+        Path projectRoot = (Path) session.getAttributes().get("projectRoot");
 
-        if (uuid == null || projectIdStr == null) {
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing auth or projectId"));
+        if (uuid == null || projectRoot == null) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing auth or project root"));
             return;
         }
 
-        long projectId;
-        try {
-            projectId = Long.parseLong(projectIdStr);
-        } catch (NumberFormatException e) {
-            session.close(CloseStatus.BAD_DATA.withReason("invalid projectId"));
-            return;
-        }
-
-        // ✅ (권장) 여기서 반드시 "프로젝트 접근 권한"을 검증해야 함
-        // workspaceService.validateProjectAccess(projectId, uuid);
-        // 위 메서드가 없다면 서비스/리포지토리 레벨에서 소유자 검증 추가 권장
-
-        Path projectRoot = workspaceService.resolveProjectRoot(projectId);
-
-        ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-i")
-                .directory(projectRoot.toFile())
-                .redirectErrorStream(true);
-
-        Map<String, String> env = pb.environment();
-        env.put("TERM", "xterm-256color");
-        env.put("PS1", "\\u@\\h:\\w$ ");
-
-        Process process = pb.start();
-
-        BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8)
+        Map<String, String> env = Map.of(
+                "TERM", "xterm-256color",
+                "PATH", "/usr/bin:/bin",
+                "HOME", projectRoot.toString()
         );
 
-        processes.put(session.getId(), process);
-        writers.put(session.getId(), writer);
+        PtyProcess process = new PtyProcessBuilder(
+                new String[]{"/bin/bash", "--login"}
+        )
+                .setDirectory(projectRoot.toString())
+                .setEnvironment(env)
+                .setRedirectErrorStream(true)
+                .start();
 
-        Thread readerThread = new Thread(() -> readOutput(session, process), "terminal-reader-" + session.getId());
+        processes.put(session.getId(), process);
+
+        Thread readerThread = new Thread(
+                () -> readLoop(session, process),
+                "pty-reader-" + session.getId()
+        );
         readerThread.setDaemon(true);
         readerThread.start();
         readerThreads.put(session.getId(), readerThread);
 
         session.sendMessage(new TextMessage(
-                "\u001b[32m[Terminal Connected]\u001b[0m\r\n" +
-                "\u001b[36mUser: " + uuid + "\u001b[0m\r\n" +
-                "\u001b[36mWorkspace: " + projectRoot + "\u001b[0m\r\n"
+                "\u001b[32m[Terminal Connected]\u001b[0m\r\n"
         ));
     }
 
-    private void readOutput(WebSocketSession session, Process process) {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-
-            char[] buf = new char[1024];
-            int n;
-            while ((n = reader.read(buf)) != -1 && session.isOpen()) {
-                session.sendMessage(new TextMessage(new String(buf, 0, n)));
+    /* =========================================================
+       출력 읽기
+    ========================================================= */
+    private void readLoop(WebSocketSession session, PtyProcess process) {
+        try (InputStream in = process.getInputStream()) {
+            byte[] buf = new byte[4096];
+            int len;
+            while ((len = in.read(buf)) != -1 && session.isOpen()) {
+                session.sendMessage(
+                        new TextMessage(new String(buf, 0, len, StandardCharsets.UTF_8))
+                );
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.debug("PTY reader closed: {}", e.getMessage());
+        }
     }
 
+    /* =========================================================
+       입력 / resize 처리
+    ========================================================= */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        Process process = processes.get(session.getId());
-        BufferedWriter writer = writers.get(session.getId());
 
-        if (process == null || writer == null || !process.isAlive()) {
-            session.sendMessage(new TextMessage("❌ terminal closed\r\n"));
+        PtyProcess process = processes.get(session.getId());
+        if (process == null || !process.isAlive()) {
             return;
         }
 
-        String input = message.getPayload();
+        String payload = message.getPayload();
 
-        // Ctrl+C
-        if ("\u0003".equals(input)) {
-            sendSignal(process, "SIGINT");
-            return;
+        // ---------- resize 메시지 ----------
+        if (payload.startsWith("{")) {
+            try {
+                JsonNode json = MAPPER.readTree(payload);
+                if ("resize".equals(json.path("type").asText())) {
+                    int cols = json.path("cols").asInt();
+                    int rows = json.path("rows").asInt();
+
+                    if (cols > 0 && rows > 0) {
+                        WinSize winSize = new WinSize(cols, rows);
+                        process.setWinSize(winSize);
+                    }
+                    return;
+                }
+            } catch (Exception e) {
+                // JSON 실패 시 일반 입력으로 fallback
+            }
         }
 
-        writer.write(input);
-        writer.flush();
-    }
-
-    private void sendSignal(Process process, String signal) {
-        try {
-            new ProcessBuilder("kill", "-" + signal, String.valueOf(process.pid()))
-                    .start().waitFor(1, TimeUnit.SECONDS);
-        } catch (Exception ignored) {}
+        // ---------- 일반 터미널 입력 ----------
+        OutputStream out = process.getOutputStream();
+        out.write(payload.getBytes(StandardCharsets.UTF_8));
+        out.flush();
     }
 
     @Override
@@ -124,21 +129,20 @@ public class LinuxTerminalWebSocketHandler extends TextWebSocketHandler {
         cleanup(session.getId());
     }
 
+    /* =========================================================
+       정리
+    ========================================================= */
     private void cleanup(String sessionId) {
         try {
-            Process p = processes.remove(sessionId);
+            PtyProcess p = processes.remove(sessionId);
             if (p != null && p.isAlive()) {
-                new ProcessBuilder("pkill", "-KILL", "-P", String.valueOf(p.pid())).start();
-                new ProcessBuilder("kill", "-9", String.valueOf(p.pid())).start();
                 p.destroyForcibly();
             }
 
-            BufferedWriter w = writers.remove(sessionId);
-            if (w != null) w.close();
-
             Thread t = readerThreads.remove(sessionId);
-            if (t != null) t.interrupt();
-
+            if (t != null) {
+                t.interrupt();
+            }
         } catch (Exception ignored) {}
     }
 }

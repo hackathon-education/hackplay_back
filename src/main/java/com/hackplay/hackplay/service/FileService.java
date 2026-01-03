@@ -9,7 +9,7 @@ import com.hackplay.hackplay.dto.FileUpdateReqDto;
 import java.io.IOException;
 
 public interface FileService {
-    void create(Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException;
+    void create(String uuid, Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException;
     
     FileRespDto getFile(Long projectId, String path) throws IOException;
     

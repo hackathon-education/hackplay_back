@@ -2,6 +2,7 @@ package com.hackplay.hackplay.controller;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,7 +15,6 @@ import com.hackplay.hackplay.dto.SigninReqDto;
 import com.hackplay.hackplay.dto.SigninRespDto;
 import com.hackplay.hackplay.dto.SigninResultRespDto;
 import com.hackplay.hackplay.dto.SignupReqDto;
-import com.hackplay.hackplay.dto.TokenRespDto;
 import com.hackplay.hackplay.service.AuthService;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,7 +40,7 @@ public class AuthController {
 
         ResponseCookie accessCookie = ResponseCookie.from(
                 "accessToken",
-                signinResultRespDto.getSigninRespDto().getAccessToken()
+                signinResultRespDto.getAccessToken()
         )
             .httpOnly(true)
             .secure(true)
@@ -67,7 +67,7 @@ public class AuthController {
     }
 
     @PostMapping("/signout")
-    public ApiResponse<Void> signout(HttpServletResponse response){
+    public ApiResponse<Void> signout(@AuthenticationPrincipal String uuid, HttpServletResponse response){
         ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "")
             .path("/")
             .httpOnly(true)
@@ -87,12 +87,12 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
 
-        authService.signout();
+        authService.signout(uuid);
         return ApiResponse.success();
     }
 
     @PostMapping("/reissue")
-    public ApiResponse<TokenRespDto> reissue(@CookieValue("refreshToken") String refreshToken, HttpServletResponse response) {
+    public ApiResponse<Void> reissue(@CookieValue("refreshToken") String refreshToken, HttpServletResponse response) {
         ReissueRespDto reissueRespDto = authService.reissue(refreshToken);
 
         ResponseCookie accessCookie = ResponseCookie.from(
@@ -120,7 +120,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
-        return ApiResponse.success(new TokenRespDto(reissueRespDto.getAccessToken()));
+        return ApiResponse.success();
     }
 
 }

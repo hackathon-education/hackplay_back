@@ -2,6 +2,7 @@ package com.hackplay.hackplay.controller;
 
 import java.io.IOException;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.hackplay.hackplay.common.ApiResponse;
@@ -23,9 +24,10 @@ public class DirectoryController {
 
     @PostMapping
     public ApiResponse<Void> createDir(
+            @AuthenticationPrincipal String uuid,
             @PathVariable("projectId") Long projectId,
             @Valid @RequestBody DirectoryCreateReqDto directoryCreateReqDto) throws IOException {
-        directoryService.create(projectId, directoryCreateReqDto);
+        directoryService.create(uuid, projectId, directoryCreateReqDto);
         return ApiResponse.success();
     }
 

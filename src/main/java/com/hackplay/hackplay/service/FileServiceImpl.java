@@ -42,9 +42,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public void create(Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
+    public void create(String uuid, Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException {
 
         memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));

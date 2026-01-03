@@ -38,14 +38,29 @@ public class AuthController {
     public ApiResponse<SigninRespDto> signin(@Valid @RequestBody SigninReqDto signinReqDto, HttpServletResponse response){
         SigninResultRespDto signinResultRespDto = authService.signin(signinReqDto);    
 
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", signinResultRespDto.getRefreshToken())
+        ResponseCookie accessCookie = ResponseCookie.from(
+                "accessToken",
+                signinResultRespDto.getSigninRespDto().getAccessToken()
+        )
             .httpOnly(true)
             .secure(true)
             .sameSite("None")
             .path("/")
-            .maxAge(60 * 60 * 24 * 7) // 7일
+            .maxAge(60 * 60)
             .build();
 
+        ResponseCookie refreshCookie = ResponseCookie.from(
+                "refreshToken",
+                signinResultRespDto.getRefreshToken()
+        )
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .path("/")
+            .maxAge(60 * 60 * 24 * 7)
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         
         return ApiResponse.success(signinResultRespDto.getSigninRespDto());
@@ -53,15 +68,24 @@ public class AuthController {
 
     @PostMapping("/signout")
     public ApiResponse<Void> signout(HttpServletResponse response){
-        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+        ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "")
+            .path("/")
             .httpOnly(true)
             .secure(true)
             .sameSite("None")
-            .path("/")
             .maxAge(0)
             .build();
 
-        response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+        ResponseCookie deleteRefresh = ResponseCookie.from("refreshToken", "")
+            .path("/")
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .maxAge(0)
+            .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
 
         authService.signout();
         return ApiResponse.success();
@@ -71,7 +95,21 @@ public class AuthController {
     public ApiResponse<TokenRespDto> reissue(@CookieValue("refreshToken") String refreshToken, HttpServletResponse response) {
         ReissueRespDto reissueRespDto = authService.reissue(refreshToken);
 
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", reissueRespDto.getRefreshToken())
+        ResponseCookie accessCookie = ResponseCookie.from(
+                "accessToken",
+                reissueRespDto.getAccessToken()
+        )
+            .httpOnly(true)
+            .secure(true)
+            .sameSite("None")
+            .path("/")
+            .maxAge(60 * 60)
+            .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from(
+                "refreshToken",
+                reissueRespDto.getRefreshToken()
+        )
             .httpOnly(true)
             .secure(true)
             .sameSite("None")
@@ -79,8 +117,9 @@ public class AuthController {
             .maxAge(60 * 60 * 24 * 7)
             .build();
 
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-        
+
         return ApiResponse.success(new TokenRespDto(reissueRespDto.getAccessToken()));
     }
 

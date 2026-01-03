@@ -3,13 +3,17 @@ body {
     display: grid;
     grid-template-columns: 240px 1fr;
     grid-template-rows: 40px 1fr 260px;
-    grid-template-areas: "top top" "sidebar editor" "terminal terminal";
+    grid-template-areas:
+        "top top"
+        "sidebar editor"
+        "terminal terminal";
     height: 100vh;
     background: #1e1e1e;
     color: #ddd;
     font-family: sans-serif;
 }
 
+/* ================= Top ================= */
 .topbar {
     grid-area: top;
     background: #333;
@@ -21,13 +25,113 @@ body {
     gap: 8px;
 }
 
+/* ================= Sidebar ================= */
 .sidebar {
+    grid-area: sidebar;
     overflow-y: auto;
     overflow-x: hidden;
-    width: 100%;
-    box-sizing: border-box;
 }
 
+/* ================= File Tree ================= */
+#file-tree {
+    padding: 8px 0 !important;
+    font-size: 13px !important;
+}
+
+.folder {
+    margin: 2px 0 !important;
+}
+
+/* 폴더 헤더 (클릭 가능한 부분) */
+.dir-item {
+    padding: 4px 8px !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.dir-item:hover {
+    background: #333 !important;
+}
+
+/* 폴더 아이콘 (접힘/펼침 표시) - CSS 삼각형 */
+.dir-item::before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-left: 5px solid #ddd !important;
+    border-top: 3px solid transparent !important;
+    border-bottom: 3px solid transparent !important;
+    margin-right: 8px !important;
+    transition: transform 0.2s ease !important;
+    flex-shrink: 0 !important;
+}
+
+.folder.expanded > .dir-item::before {
+    transform: rotate(90deg) !important;
+}
+
+/* 폴더 내용 (children) - 중요: 기본적으로 숨김 */
+.folder-children {
+    margin-left: 20px !important;
+    display: none !important; /* 기본적으로 숨김 */
+    border-left: 1px solid #444 !important;
+    padding-left: 4px !important;
+}
+
+/* 펼쳐진 폴더만 내용 보이기 */
+.folder.expanded > .folder-children {
+    display: block !important; /* 펼쳐졌을 때만 보임 */
+}
+
+/* 파일 아이템 */
+.file-item {
+    padding: 4px 8px !important;
+    margin: 1px 0 !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.file-item:hover {
+    background: #333 !important;
+}
+
+/* 선택된 파일 스타일 */
+.file-item.selected {
+    background: #0066cc !important;
+}
+
+/* 루트 폴더 특별 처리 - 화살표 숨김 */
+.folder[data-path="/"] > .dir-item::before,
+.folder[data-path=""] > .dir-item::before {
+    display: none !important;
+}
+
+/* 루트의 children은 들여쓰기 적게 */
+.folder[data-path="/"] > .folder-children,
+.folder[data-path=""] > .folder-children {
+    margin-left: 8px !important;
+    border-left: none !important;
+}
+
+/* 디버그용 - 폴더 상태 시각화 */
+.folder.expanded {
+    border-left: 2px solid #0066cc !important;
+    padding-left: 2px !important;
+}
+
+/* ================= Editor ================= */
 .editor {
     grid-area: editor;
     position: relative;
@@ -49,98 +153,7 @@ body {
     bottom: 0;
 }
 
-/* 폴더 기본적으로 닫힌 상태 */
-.folder > .folder-children {
-    display: none;
-}
-
-/* expanded 클래스가 있을 때만 열림 */
-.folder.expanded > .folder-children {
-    display: block;
-}
-
-.item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    height: 22px;
-    padding: 2px 6px;
-    box-sizing: border-box;
-
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    width: 100%;
-}
-
-.item-name {
-    flex-grow: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-left: 3%;
-}
-
-.folder-children .item {
-    opacity: 0.9;
-}
-
-.dir-item,
-.file-item,
-.folder {
-    max-width: 100%;
-}
-
-.more-btn {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    color: #aaa;
-    cursor: pointer;
-    font-size: 16px;
-    padding-left: 6px;
-}
-.more-btn:hover {
-    color: #fff;
-}
-
-.drag-over {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.context-menu {
-    position: absolute;
-    background: #2d2d2d;
-    border: 1px solid #444;
-    display: none;
-    flex-direction: column;
-    min-width: 150px;
-    z-index: 9999;
-}
-
-.context-menu button {
-    background: none;
-    border: none;
-    padding: 8px 12px;
-    color: #eee;
-    text-align: left;
-    cursor: pointer;
-}
-
-.context-menu button:hover {
-    background: #444;
-}
-
-.folder-children {
-    margin-left: 14px;
-    border-left: 1px solid rgba(255, 255, 255, 0.05);
-    padding-left: 6px;
-}
-
-/* Terminal 스타일 추가 */
+/* ================= Terminal ================= */
 .terminal-root {
     grid-area: terminal;
     background: #1e1e1e;
@@ -150,92 +163,98 @@ body {
 }
 
 .terminal-tabs {
+    height: 32px;
     display: flex;
+    align-items: center;
     background: #2a2a2a;
     border-bottom: 1px solid #444;
 }
 
 .terminal-controls {
     margin-left: auto;
-    display: flex;
-    gap: 10px;
     padding-right: 10px;
 }
 
 .terminal-container {
-    flex-grow: 1;
-    display: flex;
+    flex: 1;
+    position: relative;
     overflow: hidden;
 }
 
-.terminal-tab {
-    padding: 6px 12px;
-    background: #2a2a2a;
-    border-right: 1px solid #444;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    user-select: none;
-}
-
-.terminal-tab.active {
-    background: #1e1e1e;
-    border-bottom: 2px solid #007acc;
-}
-
-.terminal-tab:hover {
-    background: #333;
-}
-
-.terminal-tab-close {
-    margin-left: 4px;
-    padding: 0 4px;
-    border-radius: 3px;
-}
-
-.terminal-tab-close:hover {
-    background: #e81123;
-    color: white;
-}
-
+/* 🔥 핵심 수정 - 터미널 UI 개선 */
 .terminal-pane {
-    width: 100%;
-    height: 100%;
-    display: none;
+    position: absolute;
+    inset: 0;
+    display: block;
 }
 
-.terminal-pane .terminal-view {
+.terminal-view {
     width: 100%;
     height: 100%;
-    padding: 4px;
+    padding: 8px;
     box-sizing: border-box;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    background: #1e1e1e !important;
+    color: #ddd !important;
+    overflow-y: auto;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
 }
 
 .terminal-view .xterm {
-    height: 100%;
+    height: 100% !important;
+    font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
 }
 
 .terminal-view .xterm-viewport {
-    overflow-y: auto;
+    overflow-y: auto !important;
 }
 
+.terminal-view .xterm-screen {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+.terminal-view .xterm-rows {
+    white-space: pre-wrap !important;
+}
+
+/* 터미널 텍스트 선택 가능하게 */
+.terminal-view * {
+    user-select: text !important;
+}
+
+/* 스크롤바 스타일 */
+.terminal-view::-webkit-scrollbar {
+    width: 8px;
+}
+
+.terminal-view::-webkit-scrollbar-track {
+    background: #2a2a2a;
+}
+
+.terminal-view::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.terminal-view::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* ================= Buttons ================= */
 .terminal-controls button {
     background: #2a2a2a;
     border: 1px solid #444;
     color: #ddd;
     padding: 4px 10px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     border-radius: 3px;
 }
 
 .terminal-controls button:hover {
     background: #333;
-    border-color: #555;
-}
-
-.terminal-controls button:active {
-    background: #1a1a1a;
 }

@@ -1,0 +1,117 @@
+package com.hackplay.hackplay.config.webSocket;
+
+import com.hackplay.hackplay.config.jwt.TokenProvider;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+@RequiredArgsConstructor
+public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
+
+    private final TokenProvider tokenProvider;
+
+    @Override
+    public boolean beforeHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Map<String, Object> attributes
+    ) {
+        // 1) projectId 쿼리 파싱
+        String projectId = getQueryParam(request, "projectId");
+        if (!StringUtils.hasText(projectId)) {
+            response.setStatusCode(HttpStatus.BAD_REQUEST);
+            return false;
+        }
+
+        // 2) accessToken 쿠키 추출
+        HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
+        String accessToken = getCookie(servletRequest, "accessToken"); // ✅ 반드시 accessToken 쿠키여야 함
+
+        if (!StringUtils.hasText(accessToken)) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        // 3) accessToken 검증
+        boolean valid = tokenProvider.validateToken(accessToken, false);
+        if (!valid) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        // 4) uuid 추출 후 세션 attributes에 저장
+        String uuid = tokenProvider.getClaims(accessToken).getSubject();
+        if (!StringUtils.hasText(uuid)) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        attributes.put("uuid", uuid);
+        attributes.put("projectId", projectId);
+
+        return true;
+    }
+
+    @Override
+    public void afterHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Exception exception
+    ) {
+        // no-op
+    }
+
+    private static String getCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+
+        for (Cookie c : cookies) {
+            if (name.equals(c.getName())) {
+                return c.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static String getQueryParam(ServerHttpRequest request, String key) {
+        String query = request.getURI().getRawQuery(); // raw query
+        if (!StringUtils.hasText(query)) return null;
+
+        Map<String, String> map = parseQuery(query);
+        return map.get(key);
+    }
+
+    private static Map<String, String> parseQuery(String rawQuery) {
+        Map<String, String> map = new HashMap<>();
+        String[] pairs = rawQuery.split("&");
+        for (String pair : pairs) {
+            if (!StringUtils.hasText(pair)) continue;
+
+            String[] kv = pair.split("=", 2);
+            String k = urlDecode(kv[0]);
+            String v = (kv.length == 2) ? urlDecode(kv[1]) : "";
+            map.put(k, v);
+        }
+        return map;
+    }
+
+    private static String urlDecode(String s) {
+        return URLDecoder.decode(s, StandardCharsets.UTF_8);
+    }
+}

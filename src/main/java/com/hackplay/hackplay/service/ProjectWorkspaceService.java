@@ -21,9 +21,8 @@ public class ProjectWorkspaceService {
 
     public Path resolveProjectRoot(long projectId, String uuid) {
 
-    Project project = projectRepository.findById(projectId)
-                .orElseThrow(() ->
-                        new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
+        Project project = projectRepository.findByIdWithMember(projectId)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
         // ✅ 프로젝트 소유자/권한 검증 (치명 중요)
         if (!project.isAccessibleBy(uuid)) {

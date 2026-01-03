@@ -36,7 +36,7 @@
       fontSize: 14,
       fontFamily: "Cascadia Code, monospace",
       scrollback: 3000,
-      convertEol: false, // 🔴 PTY에서는 반드시 false
+      convertEol: false, // PTY 필수
       theme: {
         background: "#0d1117",
         foreground: "#d1d5da"
@@ -89,6 +89,22 @@
       sendResize();
     });
 
+    /* ================= INPUT CONTROL ================= */
+    let inputEnabled = true;
+
+    term.onData(data => {
+      if (!inputEnabled) return;
+      if (ws.readyState !== WebSocket.OPEN) return;
+
+      if (isRun && data === "\u0003") {
+        ws.send("STOP");
+        term.writeln("\n[Stopping project...]\n");
+        return;
+      }
+
+      ws.send(data);
+    });
+
     /* ================= WS Events ================= */
     ws.onopen = () => {
       reconnectAttempts = 0;
@@ -110,33 +126,22 @@
     };
 
     ws.onclose = event => {
-      term.writeln("\n\x1b[33m[Terminal Closed]\x1b[0m");
-      term.setOption("disableStdin", true);
+      inputEnabled = false;
+
+      term.write("\r\n\x1b[33m[Terminal Closed]\x1b[0m\r\n");
 
       if (event.code !== 1000 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
-        term.writeln(
-          `\x1b[36m[Reconnecting... ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}]\x1b[0m`
+        term.write(
+          `\x1b[36m[Reconnecting... ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}]\x1b[0m\r\n`
         );
+
         setTimeout(() => {
           pane.remove();
           createTerminal(isRun);
         }, 3000);
       }
     };
-
-    /* ================= INPUT ================= */
-    term.onData(data => {
-      if (ws.readyState !== WebSocket.OPEN) return;
-
-      if (isRun && data === "\u0003") {
-        ws.send("STOP");
-        term.writeln("\n[Stopping project...]\n");
-        return;
-      }
-
-      ws.send(data);
-    });
 
     return { term, ws, id };
   }

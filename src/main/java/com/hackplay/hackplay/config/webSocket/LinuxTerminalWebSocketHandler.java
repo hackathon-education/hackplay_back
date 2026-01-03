@@ -106,10 +106,16 @@ public class LinuxTerminalWebSocketHandler extends TextWebSocketHandler {
                 if ("resize".equals(json.path("type").asText())) {
                     int cols = json.path("cols").asInt();
                     int rows = json.path("rows").asInt();
-
-                    if (cols > 0 && rows > 0) {
-                        WinSize winSize = new WinSize(cols, rows);
-                        process.setWinSize(winSize);
+                    try {
+                        Object winSize = Class
+                            .forName("com.pty4j.WinSize")
+                            .getConstructor(int.class, int.class)
+                            .newInstance(cols, rows);
+                        process.getClass()
+                            .getMethod("setWinSize", winSize.getClass())
+                            .invoke(process, winSize);
+                    } catch (Exception e) {
+                        log.debug("resize ignored: {}", e.getMessage());
                     }
                     return;
                 }

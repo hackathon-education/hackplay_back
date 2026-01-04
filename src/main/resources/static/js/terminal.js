@@ -56,14 +56,21 @@
     /* ================= WebSocket ================= */
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const projectId = window.projectId;
+    const projectType = window.projectType; // ✅ 필수 (REACT / SPRING / PYTHON)
 
     if (!projectId) {
       term.writeln("❌ projectId missing");
       return;
     }
 
+    if (isRun && !projectType) {
+      term.writeln("❌ projectType missing");
+      return;
+    }
+
+    // ✅ Run은 projectType 반드시 포함
     const url = isRun
-      ? `${protocol}://${location.host}/ws/run?projectId=${projectId}`
+      ? `${protocol}://${location.host}/ws/run?projectId=${projectId}&projectType=${projectType}`
       : `${protocol}://${location.host}/ws/terminal?projectId=${projectId}`;
 
     const ws = new WebSocket(url);
@@ -96,6 +103,7 @@
       if (!inputEnabled) return;
       if (ws.readyState !== WebSocket.OPEN) return;
 
+      // ✅ Run 터미널: Ctrl+C → STOP
       if (isRun && data === "\u0003") {
         ws.send("STOP");
         term.writeln("\n[Stopping project...]\n");
@@ -117,6 +125,19 @@
 
     ws.onmessage = e => {
       if (typeof e.data === "string") {
+
+        // ===============================
+        // ✅ PORT DETECTED 메시지 후킹
+        // ===============================
+        const match = e.data.match(/\[PORT DETECTED\]\s*(\d+)/);
+        if (match) {
+          const port = match[1];
+          console.log("🚀 Run port detected:", port);
+
+          // 다음 단계(STEP 3)에서 사용 예정
+          window.__lastRunPort = port;
+        }
+
         term.write(e.data);
       }
     };

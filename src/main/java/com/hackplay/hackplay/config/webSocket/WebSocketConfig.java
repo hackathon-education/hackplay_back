@@ -19,7 +19,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 
         // ===============================
-        // 웹 터미널 (bash interactive)
+        // 웹 터미널 (컨테이너 bash)
         // ===============================
         registry.addHandler(linuxTerminalHandler, "/ws/terminal")
                 .addInterceptors(jwtProjectHandshakeInterceptor)

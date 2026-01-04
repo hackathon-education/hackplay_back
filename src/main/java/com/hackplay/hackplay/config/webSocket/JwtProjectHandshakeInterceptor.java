@@ -1,12 +1,10 @@
 package com.hackplay.hackplay.config.webSocket;
 
 import com.hackplay.hackplay.config.jwt.TokenProvider;
-import com.hackplay.hackplay.service.ProjectWorkspaceService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServerHttpRequest;
@@ -16,7 +14,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.nio.file.Path;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -28,7 +25,6 @@ import java.util.Map;
 public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
 
     private final TokenProvider tokenProvider;
-    private final ProjectWorkspaceService workspaceService;
 
     @Override
     public boolean beforeHandshake(
@@ -37,10 +33,11 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes
     ) {
-        log.info("WS handshake start: {}", request.getURI());
-        // ===== 1. projectId 쿼리 파라미터 =====
+
+        // ===============================
+        // 1. projectId (필수)
+        // ===============================
         String projectIdStr = getQueryParam(request, "projectId");
-        log.info("projectId param = {}", projectIdStr);
         if (!StringUtils.hasText(projectIdStr)) {
             response.setStatusCode(HttpStatus.BAD_REQUEST);
             return false;
@@ -54,48 +51,50 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
-        // ===== 2. accessToken 쿠키 추출 =====
+        // ===============================
+        // 2. accessToken (쿠키)
+        // ===============================
         HttpServletRequest servletRequest =
                 ((ServletServerHttpRequest) request).getServletRequest();
 
         String accessToken = getCookie(servletRequest, "accessToken");
-        log.info("accessToken present = {}", accessToken != null);
-        if (!StringUtils.hasText(accessToken)) {
+        if (!StringUtils.hasText(accessToken)
+                || !tokenProvider.validateToken(accessToken, false)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
-        // ===== 3. accessToken 검증 =====
-        if (!tokenProvider.validateToken(accessToken, false)) {
-            response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            return false;
-        }
-
-        // ===== 4. uuid 추출 =====
+        // ===============================
+        // 3. uuid (JWT subject)
+        // ===============================
         String uuid = tokenProvider.getClaims(accessToken).getSubject();
-        log.info("uuid = {}", uuid);
         if (!StringUtils.hasText(uuid)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
-        // ===== 5. 프로젝트 접근 권한 + root 경로 검증 =====
-        Path projectRoot;
-        try {
-            projectRoot = workspaceService.resolveProjectRoot(projectId, uuid);
-            log.info("projectRoot resolved = {}", projectRoot);
-        } catch (Exception e) {
-            log.error("❌ resolveProjectRoot failed: projectId={}, uuid={}", projectId, uuid, e);
-            response.setStatusCode(HttpStatus.FORBIDDEN);
+        // ===============================
+        // 4. projectType (실행 템플릿용)
+        //    ex) REACT / SPRING / PYTHON
+        // ===============================
+        String projectType = getQueryParam(request, "projectType");
+        if (!StringUtils.hasText(projectType)) {
+            response.setStatusCode(HttpStatus.BAD_REQUEST);
             return false;
         }
 
-        // ===== 6. WebSocket 세션 속성에 저장 =====
+        // ===============================
+        // 5. WebSocket attributes 저장
+        // ===============================
         attributes.put("uuid", uuid);
         attributes.put("projectId", projectId);
-        attributes.put("projectRoot", projectRoot);
+        attributes.put("projectType", projectType);
 
-        log.info("WS handshake success");
+        log.debug(
+            "WS handshake success: uuid={}, projectId={}, projectType={}",
+            uuid, projectId, projectType
+        );
+
         return true;
     }
 
@@ -134,6 +133,7 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
     private static Map<String, String> parseQuery(String rawQuery) {
         Map<String, String> map = new HashMap<>();
         String[] pairs = rawQuery.split("&");
+
         for (String pair : pairs) {
             if (!StringUtils.hasText(pair)) continue;
 

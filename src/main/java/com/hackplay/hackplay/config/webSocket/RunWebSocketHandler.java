@@ -1,191 +1,171 @@
 package com.hackplay.hackplay.config.webSocket;
 
+import com.hackplay.hackplay.common.CommonEnums.ProjectType;
+import com.hackplay.hackplay.service.ContainerActivityTracker;
+import com.hackplay.hackplay.service.ProjectContainerService;
+import com.hackplay.hackplay.service.ProjectRunCommandResolver;
+import com.pty4j.PtyProcess;
+import com.pty4j.PtyProcessBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RunWebSocketHandler extends TextWebSocketHandler {
 
-    /**
-     * 실행 중인 프로세스 (sessionId -> Process)
-     */
-    private final Map<String, Process> runProcesses = new ConcurrentHashMap<>();
+    private final ProjectContainerService containerService;
+    private final ContainerActivityTracker activityTracker;
+    private final ProjectRunCommandResolver commandResolver;
 
-    /**
-     * 출력 읽기 스레드 (sessionId -> Thread)
-     */
-    private final Map<String, Thread> readerThreads = new ConcurrentHashMap<>();
+    private final Map<String, PtyProcess> processes = new ConcurrentHashMap<>();
+    private final Map<String, Thread> readers = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
-        // ===== HandshakeInterceptor에서 주입된 값 =====
         String uuid = (String) session.getAttributes().get("uuid");
-        Long projectId = (Long) session.getAttributes().get("projectId");
-        Path projectRoot = (Path) session.getAttributes().get("projectRoot");
-
-        if (uuid == null || projectId == null || projectRoot == null) {
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing auth or project context"));
+        if (uuid == null) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing uuid"));
             return;
         }
 
-        // ===== 실행 명령 (필요 시 템플릿별로 분기 가능) =====
-        // ⚠️ 사용자 입력으로 직접 명령을 받지 말 것
-        String command = "npm run dev";
+        containerService.ensureRunning(uuid);
+        activityTracker.markActive(uuid);
 
-        ProcessBuilder pb = new ProcessBuilder(
-                "bash",
-                "-lc",
-                command
+        String containerName = "hackplay-project-" + uuid;
+
+        ProjectType type =
+                ProjectType.valueOf((String) session.getAttributes().get("projectType"));
+
+        String command = commandResolver.resolve(type);
+
+        // ===============================
+        // Run 실행
+        // ===============================
+        PtyProcess process = new PtyProcessBuilder(
+                new String[]{
+                        "docker", "exec",
+                        "-it",
+                        containerName,
+                        "bash", "-lc", command
+                }
+        )
+                .setRedirectErrorStream(true)
+                .start();
+
+        processes.put(session.getId(), process);
+
+        Thread reader = new Thread(
+                () -> readLoop(session, process),
+                "run-reader-" + session.getId()
         );
-
-        pb.directory(projectRoot.toFile());
-        pb.redirectErrorStream(true);
-
-        // ===== 환경 변수 최소화 (도커 기준) =====
-        Map<String, String> env = pb.environment();
-        env.clear();
-        env.put("PATH", "/usr/bin:/bin");
-        env.put("NODE_ENV", "development");
-        env.put("FORCE_COLOR", "1");
+        reader.setDaemon(true);
+        reader.start();
+        readers.put(session.getId(), reader);
 
         session.sendMessage(new TextMessage(
-                "🚀 Starting project\n" +
-                "👤 User: " + uuid + "\n" +
-                "📦 Project ID: " + projectId + "\n" +
-                "📁 Workspace: " + projectRoot + "\n" +
-                "▶ Command: " + command + "\n\n"
+                "\u001b[36m[Run Started]\u001b[0m\r\n" +
+                "\u001b[90mCommand: " + command + "\u001b[0m\r\n"
         ));
 
-        // ===== 프로세스 시작 =====
-        Process process = pb.start();
-        runProcesses.put(session.getId(), process);
-
-        // ===== stdout/stderr 읽기 스레드 =====
-        Thread outThread = new Thread(
-                () -> readOutput(session, process),
-                "run-output-" + session.getId()
-        );
-        outThread.setDaemon(true);
-        outThread.start();
-        readerThreads.put(session.getId(), outThread);
-
-        // ===== 종료 감시 스레드 =====
-        Thread watcher = new Thread(
-                () -> {
-                    try {
-                        watchExit(session, process);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                },
-                "run-watcher-" + session.getId()
-        );
-        watcher.setDaemon(true);
-        watcher.start();
-        readerThreads.put(session.getId() + ":watcher", watcher);
+        // ===============================
+        // ✅ 포트 감지
+        // ===============================
+        new Thread(() -> detectPort(session, uuid), "port-detector-" + uuid)
+                .start();
     }
 
-    private void readOutput(WebSocketSession session, Process process) {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+    private void detectPort(WebSocketSession session, String uuid) {
+        try {
+            // 서버 기동 대기
+            Thread.sleep(1500);
 
-            String line;
-            while ((line = reader.readLine()) != null && session.isOpen()) {
-                session.sendMessage(new TextMessage(line + "\n"));
+            String containerName = "hackplay-project-" + uuid;
+
+            Process p = new ProcessBuilder(
+                    "bash", "-c",
+                    "docker exec " + containerName + " detect-port.sh"
+            )
+                    .redirectErrorStream(true)
+                    .start();
+
+            String port =
+                    new String(p.getInputStream().readAllBytes()).trim();
+
+            if (!port.isBlank() && session.isOpen()) {
+                session.sendMessage(new TextMessage(
+                        "\u001b[32m[PORT DETECTED] " + port + "\u001b[0m\r\n"
+                ));
+                log.info("✅ Run port detected: uuid={}, port={}", uuid, port);
             }
+
         } catch (Exception e) {
-            log.debug("run output reader closed: {}", e.getMessage());
+            log.warn("❌ port detection failed: {}", e.getMessage());
         }
     }
 
-    private void watchExit(WebSocketSession session, Process process) throws IOException {
-        try {
-            int exitCode = process.waitFor();
-            if (session.isOpen()) {
+    private void readLoop(WebSocketSession session, PtyProcess process) {
+        try (InputStream in = process.getInputStream()) {
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = in.read(buf)) != -1 && session.isOpen()) {
                 session.sendMessage(
-                        new TextMessage("\n🔴 Process exited with code: " + exitCode + "\n")
+                        new TextMessage(new String(buf, 0, n, StandardCharsets.UTF_8))
                 );
             }
-        } catch (InterruptedException ignored) {
+        } catch (Exception e) {
+            log.debug("run reader closed: {}", e.getMessage());
         }
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
 
         String payload = message.getPayload().trim();
 
-        // ===== 실행 중지 명령 =====
         if (!"STOP".equalsIgnoreCase(payload)) {
             return;
         }
 
-        Process process = runProcesses.get(session.getId());
+        PtyProcess process = processes.get(session.getId());
         if (process == null || !process.isAlive()) {
-            session.sendMessage(new TextMessage("⚠️ No running process\n"));
             return;
         }
 
-        session.sendMessage(new TextMessage("🛑 Stopping process...\n"));
-        killProcessTree(process);
-        session.sendMessage(new TextMessage("✅ Process stopped\n"));
-    }
+        activityTracker.markActive(
+                (String) session.getAttributes().get("uuid")
+        );
 
-    private void killProcessTree(Process process) {
-        try {
-            long pid = process.pid();
+        session.sendMessage(new TextMessage(
+                "\u001b[33m[Stopping...]\u001b[0m\r\n"
+        ));
 
-            new ProcessBuilder("pkill", "-TERM", "-P", String.valueOf(pid))
-                    .start()
-                    .waitFor(2, TimeUnit.SECONDS);
-
-            new ProcessBuilder("kill", "-TERM", String.valueOf(pid))
-                    .start()
-                    .waitFor(2, TimeUnit.SECONDS);
-
-            if (process.isAlive()) {
-                new ProcessBuilder("pkill", "-KILL", "-P", String.valueOf(pid))
-                        .start()
-                        .waitFor(2, TimeUnit.SECONDS);
-
-                new ProcessBuilder("kill", "-KILL", String.valueOf(pid))
-                        .start()
-                        .waitFor(2, TimeUnit.SECONDS);
-
-                process.destroyForcibly();
-            }
-        } catch (Exception e) {
-            process.destroyForcibly();
-        }
+        process.destroy(); // (다음 단계에서 개선)
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 
-        Process process = runProcesses.remove(session.getId());
+        PtyProcess process = processes.remove(session.getId());
         if (process != null && process.isAlive()) {
-            killProcessTree(process);
+            process.destroyForcibly();
         }
 
-        Thread outThread = readerThreads.remove(session.getId());
-        if (outThread != null) outThread.interrupt();
+        Thread reader = readers.remove(session.getId());
+        if (reader != null) {
+            reader.interrupt();
+        }
 
-        Thread watcher = readerThreads.remove(session.getId() + ":watcher");
-        if (watcher != null) watcher.interrupt();
+        log.info("Run terminal closed: session={}", session.getId());
     }
 }

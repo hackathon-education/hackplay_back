@@ -16,4 +16,5 @@ public interface ProjectService {
     ProjectRespDto getProject(String uuid, Long projectId);
     void update(Long projectId, ProjectUpdateReqDto request);
     void delete(Long projectId);
+    String getTemplateById(Long projectId);
 }

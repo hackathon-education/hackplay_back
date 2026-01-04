@@ -350,4 +350,16 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepository.delete(project);
     }
+
+    /**
+     * 실행에 필요한 정보만 제공
+     */
+    public String getTemplateById(Long projectId) {
+        return projectRepository.findById(projectId)
+            .map(Project::getTemplateType)
+            .orElseThrow(() ->
+                new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND)
+            );
+    }
+
 }

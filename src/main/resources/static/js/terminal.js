@@ -36,7 +36,7 @@
       fontSize: 14,
       fontFamily: "Cascadia Code, monospace",
       scrollback: 3000,
-      convertEol: false, // PTY 필수
+      convertEol: false,
       theme: {
         background: "#0d1117",
         foreground: "#d1d5da"
@@ -47,7 +47,6 @@
     term.loadAddon(fitAddon);
     term.open(document.getElementById(id));
 
-    // 브라우저 단축키 충돌 방지
     term.attachCustomKeyEventHandler(e => {
       if (e.ctrlKey && ["w", "r"].includes(e.key.toLowerCase())) return false;
       return true;
@@ -56,21 +55,15 @@
     /* ================= WebSocket ================= */
     const protocol = location.protocol === "https:" ? "wss" : "ws";
     const projectId = window.projectId;
-    const projectType = window.projectType; // ✅ 필수 (REACT / SPRING / PYTHON)
 
     if (!projectId) {
       term.writeln("❌ projectId missing");
       return;
     }
 
-    if (isRun && !projectType) {
-      term.writeln("❌ projectType missing");
-      return;
-    }
-
-    // ✅ Run은 projectType 반드시 포함
+    // ✅ projectType 제거
     const url = isRun
-      ? `${protocol}://${location.host}/ws/run?projectId=${projectId}&projectType=${projectType}`
+      ? `${protocol}://${location.host}/ws/run?projectId=${projectId}`
       : `${protocol}://${location.host}/ws/terminal?projectId=${projectId}`;
 
     const ws = new WebSocket(url);
@@ -103,7 +96,7 @@
       if (!inputEnabled) return;
       if (ws.readyState !== WebSocket.OPEN) return;
 
-      // ✅ Run 터미널: Ctrl+C → STOP
+      // Run 터미널: Ctrl+C → STOP
       if (isRun && data === "\u0003") {
         ws.send("STOP");
         term.writeln("\n[Stopping project...]\n");
@@ -127,15 +120,13 @@
       if (typeof e.data === "string") {
 
         // ===============================
-        // ✅ PORT DETECTED 메시지 후킹
+        // PORT DETECTED 메시지 후킹
         // ===============================
         const match = e.data.match(/\[PORT DETECTED\]\s*(\d+)/);
         if (match) {
           const port = match[1];
           console.log("🚀 Run port detected:", port);
-
-          // 다음 단계(STEP 3)에서 사용 예정
-          window.__lastRunPort = port;
+          window.__lastRunPort = port; // STEP 3에서 사용
         }
 
         term.write(e.data);
@@ -148,7 +139,6 @@
 
     ws.onclose = event => {
       inputEnabled = false;
-
       term.write("\r\n\x1b[33m[Terminal Closed]\x1b[0m\r\n");
 
       if (event.code !== 1000 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {

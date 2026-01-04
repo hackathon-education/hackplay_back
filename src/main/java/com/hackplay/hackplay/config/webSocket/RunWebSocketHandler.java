@@ -1,9 +1,9 @@
 package com.hackplay.hackplay.config.webSocket;
 
-import com.hackplay.hackplay.common.CommonEnums.ProjectType;
 import com.hackplay.hackplay.service.ContainerActivityTracker;
 import com.hackplay.hackplay.service.ProjectContainerService;
 import com.hackplay.hackplay.service.ProjectRunCommandResolver;
+import com.hackplay.hackplay.service.ProjectService;
 import com.pty4j.PtyProcess;
 import com.pty4j.PtyProcessBuilder;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +26,7 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
     private final ProjectContainerService containerService;
     private final ContainerActivityTracker activityTracker;
     private final ProjectRunCommandResolver commandResolver;
+    private final ProjectService projectService;
 
     private final Map<String, PtyProcess> processes = new ConcurrentHashMap<>();
     private final Map<String, Thread> readers = new ConcurrentHashMap<>();
@@ -34,20 +35,30 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
         String uuid = (String) session.getAttributes().get("uuid");
-        if (uuid == null) {
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing uuid"));
+        Long projectId = (Long) session.getAttributes().get("projectId");
+
+        if (uuid == null || projectId == null) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing session attributes"));
             return;
         }
 
+        // ===============================
+        // 컨테이너 보장
+        // ===============================
         containerService.ensureRunning(uuid);
         activityTracker.markActive(uuid);
 
+        // ===============================
+        // 프로젝트 조회
+        // ===============================
+        String template = projectService.getTemplateById(projectId);
+
+        // ===============================
+        // 실행 명령 결정
+        // ===============================
+        String command = commandResolver.resolve(template);
+
         String containerName = "hackplay-project-" + uuid;
-
-        ProjectType type =
-                ProjectType.valueOf((String) session.getAttributes().get("projectType"));
-
-        String command = commandResolver.resolve(type);
 
         // ===============================
         // Run 실행
@@ -75,11 +86,12 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
 
         session.sendMessage(new TextMessage(
                 "\u001b[36m[Run Started]\u001b[0m\r\n" +
+                "\u001b[90mTemplate: " + template + "\u001b[0m\r\n" +
                 "\u001b[90mCommand: " + command + "\u001b[0m\r\n"
         ));
 
         // ===============================
-        // ✅ 포트 감지
+        // 포트 감지
         // ===============================
         new Thread(() -> detectPort(session, uuid), "port-detector-" + uuid)
                 .start();
@@ -87,7 +99,6 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
 
     private void detectPort(WebSocketSession session, String uuid) {
         try {
-            // 서버 기동 대기
             Thread.sleep(1500);
 
             String containerName = "hackplay-project-" + uuid;
@@ -131,9 +142,7 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
 
-        String payload = message.getPayload().trim();
-
-        if (!"STOP".equalsIgnoreCase(payload)) {
+        if (!"STOP".equalsIgnoreCase(message.getPayload().trim())) {
             return;
         }
 
@@ -150,7 +159,7 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
                 "\u001b[33m[Stopping...]\u001b[0m\r\n"
         ));
 
-        process.destroy(); // (다음 단계에서 개선)
+        process.destroy(); // 다음 단계: PID 기반 종료
     }
 
     @Override

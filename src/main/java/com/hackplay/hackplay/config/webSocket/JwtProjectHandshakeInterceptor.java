@@ -74,25 +74,14 @@ public class JwtProjectHandshakeInterceptor implements HandshakeInterceptor {
         }
 
         // ===============================
-        // 4. projectType (실행 템플릿용)
-        //    ex) REACT / SPRING / PYTHON
-        // ===============================
-        String projectType = getQueryParam(request, "projectType");
-        if (!StringUtils.hasText(projectType)) {
-            response.setStatusCode(HttpStatus.BAD_REQUEST);
-            return false;
-        }
-
-        // ===============================
-        // 5. WebSocket attributes 저장
+        // 4. attributes 저장
         // ===============================
         attributes.put("uuid", uuid);
         attributes.put("projectId", projectId);
-        attributes.put("projectType", projectType);
 
         log.debug(
-            "WS handshake success: uuid={}, projectId={}, projectType={}",
-            uuid, projectId, projectType
+            "WS handshake success: uuid={}, projectId={}",
+            uuid, projectId
         );
 
         return true;

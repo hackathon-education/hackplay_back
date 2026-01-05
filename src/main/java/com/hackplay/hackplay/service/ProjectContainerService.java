@@ -12,7 +12,6 @@ public class ProjectContainerService {
 
     private static final String RUNTIME_IMAGE = "hackplay-runtime";
     private static final String PROJECTS_HOST_PATH = "/home/ubuntu/Hackplay/projects";
-    private static final String PROJECTS_CONTAINER_PATH = "/projects";
 
     /* ==================================================
      * Public API
@@ -28,7 +27,7 @@ public class ProjectContainerService {
         try {
             if (!exists(name)) {
                 log.info("🚀 Creating container {}", name);
-                create(name);
+                create(name, projectUuid);
                 return;
             }
 
@@ -106,12 +105,12 @@ public class ProjectContainerService {
         return out.trim().equals("true");
     }
 
-    private void create(String name) throws Exception {
+    private void create(String name, String uuid) throws Exception {
         exec(
             "docker", "run", "-d",
             "--name", name,
-            "-v", PROJECTS_HOST_PATH + ":" + PROJECTS_CONTAINER_PATH,
-            "-w", PROJECTS_CONTAINER_PATH,
+            "-v", PROJECTS_HOST_PATH + "/" + uuid + ":/workspace",
+            "-w", "/workspace",
             RUNTIME_IMAGE,
             "sleep", "infinity"
         );

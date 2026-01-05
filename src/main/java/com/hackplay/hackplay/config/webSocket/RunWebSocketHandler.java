@@ -42,82 +42,65 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        // ===============================
-        // 컨테이너 보장
-        // ===============================
+        // ✅ 컨테이너 보장 (1회만)
         containerService.ensureRunning(uuid);
         activityTracker.markActive(uuid);
 
-        // ===============================
-        // 프로젝트 조회
-        // ===============================
+        // ✅ 프로젝트 템플릿 조회
         String template = projectService.getTemplateById(projectId);
 
-        // ===============================
-        // 실행 명령 결정
-        // ===============================
+        // ✅ 실행 명령 결정
         String command = commandResolver.resolve(template);
-
         String containerName = "hackplay-project-" + uuid;
 
-        // ===============================
-        // Run 실행
-        // ===============================
+        // ✅ Run 실행
         PtyProcess process = new PtyProcessBuilder(
-                new String[]{
-                        "docker", "exec",
-                        "-it",
-                        containerName,
-                        "bash", "-lc", command
-                }
+            new String[]{
+                "docker", "exec", "-it",
+                containerName,
+                "bash", "-lc", command
+            }
         )
-                .setRedirectErrorStream(true)
-                .start();
+        .setRedirectErrorStream(true)
+        .start();
 
         processes.put(session.getId(), process);
 
         Thread reader = new Thread(
-                () -> readLoop(session, process),
-                "run-reader-" + session.getId()
+            () -> readLoop(session, process),
+            "run-reader-" + session.getId()
         );
         reader.setDaemon(true);
         reader.start();
         readers.put(session.getId(), reader);
 
         session.sendMessage(new TextMessage(
-                "\u001b[36m[Run Started]\u001b[0m\r\n" +
-                "\u001b[90mTemplate: " + template + "\u001b[0m\r\n" +
-                "\u001b[90mCommand: " + command + "\u001b[0m\r\n"
+            "\u001b[36m[Run Started]\u001b[0m\r\n" +
+            "\u001b[90mTemplate: " + template + "\u001b[0m\r\n" +
+            "\u001b[90mCommand: " + command + "\u001b[0m\r\n"
         ));
 
-        // ===============================
-        // 포트 감지
-        // ===============================
-        new Thread(() -> detectPort(session, uuid), "port-detector-" + uuid)
-                .start();
+        // ✅ 포트 감지 (옵션)
+        new Thread(() -> detectPort(session, containerName), "port-detector-" + uuid)
+            .start();
     }
 
-    private void detectPort(WebSocketSession session, String uuid) {
+    private void detectPort(WebSocketSession session, String containerName) {
         try {
             Thread.sleep(1500);
 
-            String containerName = "hackplay-project-" + uuid;
-
             Process p = new ProcessBuilder(
-                    "bash", "-c",
-                    "docker exec " + containerName + " detect-port.sh"
+                "docker", "exec", containerName, "detect-port.sh"
             )
-                    .redirectErrorStream(true)
-                    .start();
+            .redirectErrorStream(true)
+            .start();
 
-            String port =
-                    new String(p.getInputStream().readAllBytes()).trim();
+            String port = new String(p.getInputStream().readAllBytes()).trim();
 
             if (!port.isBlank() && session.isOpen()) {
                 session.sendMessage(new TextMessage(
-                        "\u001b[32m[PORT DETECTED] " + port + "\u001b[0m\r\n"
+                    "\u001b[32m[PORT DETECTED] " + port + "\u001b[0m\r\n"
                 ));
-                log.info("✅ Run port detected: uuid={}, port={}", uuid, port);
             }
 
         } catch (Exception e) {
@@ -131,35 +114,29 @@ public class RunWebSocketHandler extends TextWebSocketHandler {
             int n;
             while ((n = in.read(buf)) != -1 && session.isOpen()) {
                 session.sendMessage(
-                        new TextMessage(new String(buf, 0, n, StandardCharsets.UTF_8))
+                    new TextMessage(new String(buf, 0, n, StandardCharsets.UTF_8))
                 );
             }
-        } catch (Exception e) {
-            log.debug("run reader closed: {}", e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
 
-        if (!"STOP".equalsIgnoreCase(message.getPayload().trim())) {
-            return;
-        }
+        if (!"STOP".equalsIgnoreCase(message.getPayload().trim())) return;
 
         PtyProcess process = processes.get(session.getId());
-        if (process == null || !process.isAlive()) {
-            return;
-        }
+        if (process == null || !process.isAlive()) return;
 
         activityTracker.markActive(
-                (String) session.getAttributes().get("uuid")
+            (String) session.getAttributes().get("uuid")
         );
 
         session.sendMessage(new TextMessage(
-                "\u001b[33m[Stopping...]\u001b[0m\r\n"
+            "\u001b[33m[Stopping...]\u001b[0m\r\n"
         ));
 
-        process.destroy(); // 다음 단계: PID 기반 종료
+        process.destroy(); // ✅ Run만 종료
     }
 
     @Override

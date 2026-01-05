@@ -31,40 +31,31 @@ public class LinuxTerminalWebSocketHandler extends TextWebSocketHandler {
 
         String uuid = (String) session.getAttributes().get("uuid");
         if (uuid == null) {
-            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("missing uuid"));
+            session.close();
             return;
         }
 
-        // ✅ 컨테이너 보장
         containerService.ensureRunning(uuid);
-        activityTracker.markActive(uuid);
 
         String containerName = "hackplay-project-" + uuid;
 
-        // ✅ 컨테이너 bash 접속
         PtyProcess process = new PtyProcessBuilder(
-                new String[]{
-                        "docker", "exec",
-                        "-it",
-                        containerName,
-                        "bash"
-                }
+            new String[]{
+                "docker", "exec", "-it",
+                containerName,
+                "bash"
+            }
         )
-                .setRedirectErrorStream(true)
-                .start();
+        .setRedirectErrorStream(true)
+        .start();
 
         processes.put(session.getId(), process);
 
-        Thread reader = new Thread(() -> readLoop(session, process),
-                "terminal-reader-" + session.getId());
-        reader.setDaemon(true);
-        reader.start();
-        readers.put(session.getId(), reader);
-
-        session.sendMessage(new TextMessage(
-                "\u001b[32m[Container Terminal Connected]\u001b[0m\r\n"
-        ));
+        new Thread(() -> readLoop(session, process),
+                "terminal-reader-" + session.getId())
+            .start();
     }
+
 
     private void readLoop(WebSocketSession session, PtyProcess process) {
         try (InputStream in = process.getInputStream()) {

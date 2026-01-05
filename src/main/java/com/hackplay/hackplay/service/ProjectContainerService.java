@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 public class ProjectContainerService {
 
     private static final String RUNTIME_IMAGE = "hackplay-runtime";
+
+    // ⚠️ 반드시 실제 프로젝트 디렉터리 경로와 일치해야 함
     private static final String PROJECTS_HOST_PATH = "/home/ubuntu/Hackplay/projects";
 
     /* ==================================================
@@ -18,43 +20,40 @@ public class ProjectContainerService {
      * ================================================== */
 
     /**
-     * 프로젝트 컨테이너 보장 (존재 + 실행)
+     * 프로젝트 컨테이너 존재 + 실행 보장
      */
     public synchronized void ensureRunning(String projectUuid) {
 
         String name = containerName(projectUuid);
 
         try {
-            if (!exists(name)) {
-                log.info("🚀 Creating container {}", name);
-                create(name, projectUuid);
+            if (exists(name)) {
+                if (!isRunning(name)) {
+                    log.info("▶️ Starting existing container {}", name);
+                    start(name);
+                }
                 return;
             }
 
-            if (!isRunning(name)) {
-                log.info("🔄 Starting container {}", name);
-                start(name);
-                return;
-            }
-
-            log.debug("✅ Container already running: {}", name);
+            log.info("🚀 Creating new project container {}", name);
+            create(name, projectUuid);
 
         } catch (Exception e) {
-            throw new RuntimeException("Failed to ensure container: " + name, e);
+            throw new RuntimeException(
+                "Failed to ensure project container: " + name, e
+            );
         }
     }
 
     /**
-     * 컨테이너 중지 (GC 전용)
+     * 컨테이너 중지 (GC/idle 정리용)
      */
     public synchronized void stop(String projectUuid) {
 
         String name = containerName(projectUuid);
 
         try {
-            if (!exists(name)) {
-                return;
-            }
+            if (!exists(name)) return;
 
             if (isRunning(name)) {
                 log.info("🛑 Stopping container {}", name);
@@ -67,7 +66,7 @@ public class ProjectContainerService {
     }
 
     /**
-     * 컨테이너 완전 제거 (선택적 – 운영 시 거의 사용 안 함)
+     * 컨테이너 완전 제거 (운영 시 거의 사용 안 함)
      */
     public synchronized void remove(String projectUuid) {
 
@@ -106,10 +105,13 @@ public class ProjectContainerService {
     }
 
     private void create(String name, String uuid) throws Exception {
+
+        String hostPath = PROJECTS_HOST_PATH + "/" + uuid;
+
         exec(
             "docker", "run", "-d",
             "--name", name,
-            "-v", PROJECTS_HOST_PATH + "/" + uuid + ":/workspace",
+            "-v", hostPath + ":/workspace",
             "-w", "/workspace",
             RUNTIME_IMAGE,
             "sleep", "infinity"
@@ -134,6 +136,7 @@ public class ProjectContainerService {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader r = new BufferedReader(
                 new InputStreamReader(p.getInputStream()))) {
+
             String line;
             while ((line = r.readLine()) != null) {
                 sb.append(line).append('\n');

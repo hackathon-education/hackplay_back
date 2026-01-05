@@ -32,11 +32,15 @@
 
     /* ================= XTERM ================= */
     const term = new Terminal({
-      cursorBlink: true,
-      fontSize: 14,
+      cursorBlink: false,
+      rendererType: 'canvas',
+      fontSize: 13,
+      lineHeight: 1.1,
       fontFamily: "Cascadia Code, monospace",
-      scrollback: 3000,
+      scrollback: 2000,
       convertEol: false,
+      disableStdin: false,
+      smoothScrollDuration: 0,
       theme: {
         background: "#0d1117",
         foreground: "#d1d5da"
@@ -78,33 +82,40 @@
       }));
     }
 
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       fitAddon.fit();
       sendResize();
       term.focus();
-    });
+    }, 0);
+
+    let resizeTimer = null;
 
     window.addEventListener("resize", () => {
-      fitAddon.fit();
-      sendResize();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        fitAddon.fit();
+        sendResize();
+      }, 200);
     });
 
     /* ================= INPUT CONTROL ================= */
     let inputEnabled = true;
 
+    let inBuf = "";
+    let inputTimer = null;
+
     term.onData(data => {
-      if (!inputEnabled) return;
-      if (ws.readyState !== WebSocket.OPEN) return;
+      inBuf += data;
 
-      // Run 터미널: Ctrl+C → STOP
-      if (isRun && data === "\u0003") {
-        ws.send("STOP");
-        term.writeln("\n[Stopping project...]\n");
-        return;
+      if (!inputTimer) {
+        inputTimer = setTimeout(() => {
+          ws.send(inBuf);
+          inBuf = "";
+          inputTimer = null;
+        }, 8); // 5~10ms
       }
-
-      ws.send(data);
     });
+
 
     /* ================= WS Events ================= */
     ws.onopen = () => {
@@ -116,20 +127,21 @@
       );
     };
 
+    let outBuf = "";
+    let flushScheduled = false;
+
     ws.onmessage = e => {
-      if (typeof e.data === "string") {
+      if (typeof e.data !== "string") return;
 
-        // ===============================
-        // PORT DETECTED 메시지 후킹
-        // ===============================
-        const match = e.data.match(/\[PORT DETECTED\]\s*(\d+)/);
-        if (match) {
-          const port = match[1];
-          console.log("🚀 Run port detected:", port);
-          window.__lastRunPort = port; // STEP 3에서 사용
-        }
+      outBuf += e.data;
 
-        term.write(e.data);
+      if (!flushScheduled) {
+        flushScheduled = true;
+        requestAnimationFrame(() => {
+          term.write(outBuf);
+          outBuf = "";
+          flushScheduled = false;
+        });
       }
     };
 

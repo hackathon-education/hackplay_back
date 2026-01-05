@@ -18,14 +18,9 @@ window.addEventListener("DOMContentLoaded", () => {
   refreshTree();         // 2. File Tree
 
   // 3. 터미널 자동 생성 (5초 후)
-  setTimeout(() => {
-    if (window.HackPlayTerminal) {
-      console.log("🖥️ Creating default terminal...");
-      window.HackPlayTerminal.createTerminal();
-    } else {
-      console.warn("⚠️ HackPlayTerminal not available");
-    }
-  }, 5000);
+  requestIdleCallback(() => {
+    HackPlayTerminal.createTerminal();
+  });
 
   console.log("✅ HackPlay IDE Ready");
 });

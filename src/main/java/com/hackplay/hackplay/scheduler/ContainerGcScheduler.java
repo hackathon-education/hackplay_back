@@ -25,7 +25,7 @@ public class ContainerGcScheduler {
         tracker.snapshot().forEach((uuid, lastActive) -> {
             if (now - lastActive > IDLE_LIMIT_MS) {
                 log.info("🧹 stopping idle container: {}", uuid);
-                containerService.stop(uuid);
+                containerService.stop(uuid);   // ✅ 여기서만 stop
                 tracker.remove(uuid);
             }
         });

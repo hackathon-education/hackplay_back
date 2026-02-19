@@ -12,6 +12,7 @@ import java.io.IOException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
+// 403
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

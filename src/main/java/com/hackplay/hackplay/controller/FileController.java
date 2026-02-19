@@ -11,6 +11,7 @@ import com.hackplay.hackplay.service.FileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -24,9 +25,10 @@ public class FileController {
 
     @PostMapping
     public ApiResponse<Void> createFile(
+            @AuthenticationPrincipal String uuid,
             @PathVariable("projectId") Long projectId,
             @Valid @RequestBody FileCreateReqDto fileCreateReqDto) throws IOException {
-        fileService.create(projectId, fileCreateReqDto);
+        fileService.create(uuid, projectId, fileCreateReqDto);
         return ApiResponse.success();
     }
 

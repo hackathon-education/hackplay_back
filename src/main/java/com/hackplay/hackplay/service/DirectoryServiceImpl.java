@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,9 +35,7 @@ public class DirectoryServiceImpl implements DirectoryService {
 
     @Override
     @Transactional
-    public void create(Long projectId, DirectoryCreateReqDto directoryCreateReqDto) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
+    public void create(String uuid, Long projectId, DirectoryCreateReqDto directoryCreateReqDto) throws IOException {
 
         memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));

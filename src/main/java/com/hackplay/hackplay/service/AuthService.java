@@ -8,6 +8,6 @@ import com.hackplay.hackplay.dto.SignupReqDto;
 public interface AuthService {
     void signup(SignupReqDto signupReqDto);
     SigninResultRespDto signin(SigninReqDto signinReqDto);
-    void signout();
+    void signout(String uuid);
     ReissueRespDto reissue(String refreshToken);
 }

@@ -2,8 +2,6 @@ package com.hackplay.hackplay.service;
 
 import java.util.UUID;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,21 +77,18 @@ public class AuthServiceImpl implements AuthService{
         // 회원 리프레쉬 토큰 및 마지막 로그인 시점 DB 저장.
         member.signinUpdate(refreshToken);
 
-        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member, accessToken);
+        SigninRespDto signinRespDto = SigninRespDto.entityToDto(member);
     
         return new SigninResultRespDto(
             signinRespDto,
+            accessToken,
             refreshToken
         );
     }
 
     @Override
     @Transactional
-    public void signout() {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
-
+    public void signout(String uuid) {
         Member member =  memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 

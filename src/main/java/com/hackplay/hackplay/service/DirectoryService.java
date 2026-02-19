@@ -9,7 +9,7 @@ import com.hackplay.hackplay.dto.DirectoryTreeRespDto;
 
 public interface DirectoryService {
     // 디렉토리 생성
-    void create(Long projectId, DirectoryCreateReqDto directoryCreateReqDto) throws IOException;
+    void create(String uuid, Long projectId, DirectoryCreateReqDto directoryCreateReqDto) throws IOException;
     // 하위 디렉토리 조회
     DirectoryTreeRespDto view(Long projectId);
     // 디렉토리 이름 변경

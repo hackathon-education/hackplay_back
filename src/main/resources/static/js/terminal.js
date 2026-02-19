@@ -1,226 +1,171 @@
 (function () {
-
   const FitAddon = window.FitAddon?.FitAddon;
+  if (!FitAddon) {
+    console.error("❌ FitAddon not loaded");
+    return;
+  }
 
-  let terminals = {};
-  let terminalCounter = 0;
-  let activeTerminalId = null;
+  let counter = 0;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 3;
 
   window.HackPlayTerminal = {
-    createTerminal: () => createTerminalInternal(false),
-    openRunTerminal: () => createTerminalInternal(true),
-    activateTerminal,
-    closeTerminal,
-
-    terminals: terminals
+    createTerminal: () => createTerminal(false),
+    openRunTerminal: () => createTerminal(true)
   };
 
-  window.createTerminalInternal = (isRunTerminal) => createTerminalInternal(isRunTerminal);
+  function createTerminal(isRun) {
+    counter++;
+    const id = (isRun ? "run-" : "term-") + counter;
 
-  /* ================================
-      CREATE TERMINAL
-  ================================= */
-  function createTerminalInternal(isRunTerminal) {
-    terminalCounter++;
-    const id = (isRunTerminal ? "run-" : "term-") + terminalCounter;
+    const container = document.getElementById("terminal-container");
+    if (!container) {
+      console.error("❌ terminal-container not found");
+      return;
+    }
 
-    const tab = createTab(id, isRunTerminal);
-    const pane = createPane(id);
+    /* ================= DOM ================= */
+    const pane = document.createElement("div");
+    pane.className = "terminal-pane";
+    pane.innerHTML = `<div class="terminal-view" id="${id}"></div>`;
+    container.appendChild(pane);
 
-    document.getElementById("terminal-tabs").appendChild(tab);
-    document.getElementById("terminal-container").appendChild(pane);
-
-    const termConfig = {
-      cursorBlink: true,
-      fontSize: 14,
+    /* ================= XTERM ================= */
+    const term = new Terminal({
+      cursorBlink: false,
+      rendererType: 'canvas',
+      fontSize: 13,
+      lineHeight: 1.1,
       fontFamily: "Cascadia Code, monospace",
-      scrollback: 5000,
+      scrollback: 2000,
+      convertEol: false,
+      disableStdin: false,
+      smoothScrollDuration: 0,
       theme: {
         background: "#0d1117",
         foreground: "#d1d5da"
       }
-    };
+    });
 
-    const term = new Terminal(termConfig);
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
+    term.open(document.getElementById(id));
 
-    term.open(document.getElementById(`${id}-view`));
-    setTimeout(() => fitAddon.fit(), 20);
+    term.attachCustomKeyEventHandler(e => {
+      if (e.ctrlKey && ["w", "r"].includes(e.key.toLowerCase())) return false;
+      return true;
+    });
 
-    let ws = isRunTerminal
-      ? connectRunSocket(term, id)
-      : connectPtySocket(term, id);
+    /* ================= WebSocket ================= */
+    const protocol = location.protocol === "https:" ? "wss" : "ws";
+    const projectId = window.projectId;
 
-    terminals[id] = {
-      id,
-      term,
-      ws,
-      fitAddon,
-      pane,
-      tab,
-      isRunTerminal
-    };
+    if (!projectId) {
+      term.writeln("❌ projectId missing");
+      return;
+    }
 
-    activateTerminal(id);
+    // ✅ projectType 제거
+    const url = isRun
+      ? `${protocol}://${location.host}/ws/run?projectId=${projectId}`
+      : `${protocol}://${location.host}/ws/terminal?projectId=${projectId}`;
 
-    window.addEventListener("resize", () => fitAddon.fit());
+    const ws = new WebSocket(url);
 
-    return id;
-  }
+    /* ================= Resize ================= */
+    function sendResize() {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        type: "resize",
+        cols: term.cols,
+        rows: term.rows
+      }));
+    }
 
-  /* ================================
-      PTY TERMINAL SOCKET
-  ================================= */
-  function connectPtySocket(term, id) {
-    const ws = new WebSocket(`ws://${location.host}/ws/terminal`);
+    setTimeout(() => {
+      fitAddon.fit();
+      sendResize();
+      term.focus();
+    }, 0);
 
-    ws.onopen = () => {
-      term.writeln("\x1b[32m[PTY connected]\x1b[0m");
-    };
+    let resizeTimer = null;
 
-    ws.onmessage = e => term.write(e.data);
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        fitAddon.fit();
+        sendResize();
+      }, 200);
+    });
 
-    ws.onclose = () => {
-      term.writeln("\n\x1b[31m[PTY disconnected]\x1b[0m");
-    };
+    /* ================= INPUT CONTROL ================= */
+    let inputEnabled = true;
+
+    let inBuf = "";
+    let inputTimer = null;
 
     term.onData(data => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+      inBuf += data;
+
+      if (!inputTimer) {
+        inputTimer = setTimeout(() => {
+          ws.send(inBuf);
+          inBuf = "";
+          inputTimer = null;
+        }, 8); // 5~10ms
+      }
     });
 
-    return ws;
-  }
 
-  /* ================================
-      RUN TERMINAL SOCKET
-  ================================= */
-function connectRunSocket(term, id) {
-  if (!window.projectId) {
-    term.writeln("\x1b[31m[Error: projectId undefined]\x1b[0m");
-    return null;
-  }
+    /* ================= WS Events ================= */
+    ws.onopen = () => {
+      reconnectAttempts = 0;
+      term.writeln(
+        isRun
+          ? "\x1b[36m[Run Terminal Connected]\x1b[0m"
+          : "\x1b[32m[Terminal Connected]\x1b[0m"
+      );
+    };
 
-  const ws = new WebSocket(`ws://${location.host}/ws/run?projectId=${window.projectId}`);
+    let outBuf = "";
+    let flushScheduled = false;
 
-  ws.onopen = () => {
-    term.writeln("\x1b[36m[Run Terminal Connected]\x1b[0m");
-    term.writeln("[Waiting for logs...]\n");
-  };
+    ws.onmessage = e => {
+      if (typeof e.data !== "string") return;
 
-  // 강력한 sanitize
-  function sanitizeTerminalOutput(data) {
-    return data
-      .replace(/\u0000/g, "")
-      .replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .replace(/\t/g, "  ");
-  }
+      outBuf += e.data;
 
-  let buffer = "";
-
-  ws.onmessage = e => {
-    const cleaned = sanitizeTerminalOutput(e.data);
-    buffer += cleaned;
-
-    let lines = buffer.split("\n");
-    buffer = lines.pop();
-
-    lines.forEach(line => {
-      term.writeln(line);
-      console.log("📦 [RunTerminal line]:", JSON.stringify(line));
-    });
-  };
-
-  ws.onclose = () => {
-    term.writeln("\n\x1b[33m[Run Terminal Closed]\x1b[0m");
-  };
-
-  term.onData(data => {
-    if (data === "\u0003") {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send("STOP");
-        term.writeln("\n[Stopping project...]\n");
+      if (!flushScheduled) {
+        flushScheduled = true;
+        requestAnimationFrame(() => {
+          term.write(outBuf);
+          outBuf = "";
+          flushScheduled = false;
+        });
       }
-    }
-  });
+    };
 
-  return ws;
-}
+    ws.onerror = () => {
+      term.writeln("\n\x1b[31m[WebSocket Error]\x1b[0m");
+    };
 
-  /* ================================
-      UI - TAB & PANE
-  ================================= */
-  function createTab(id, isRun) {
-    const div = document.createElement("div");
-    div.className = "terminal-tab";
-    div.id = id + "-tab";
-    div.innerHTML = isRun ? "🚀 Run" : "📟 Terminal";
+    ws.onclose = event => {
+      inputEnabled = false;
+      term.write("\r\n\x1b[33m[Terminal Closed]\x1b[0m\r\n");
 
-    div.onclick = () => activateTerminal(id);
-    return div;
-  }
+      if (event.code !== 1000 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts++;
+        term.write(
+          `\x1b[36m[Reconnecting... ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}]\x1b[0m\r\n`
+        );
 
-  function createPane(id) {
-    const div = document.createElement("div");
-    div.className = "terminal-pane";
-    div.id = id + "-pane";
-
-    div.innerHTML = `
-      <div class="terminal-header">
-        <button onclick="HackPlayTerminal.closeTerminal('${id}')">✕</button>
-      </div>
-      <div class="terminal-view" id="${id}-view"></div>
-    `;
-
-    return div;
-  }
-
-  /* ================================
-      UI - ACTIVATE & CLOSE
-  ================================= */
-  function activateTerminal(id) {
-    document.querySelectorAll(".terminal-pane").forEach(p => p.style.display = "none");
-    document.querySelectorAll(".terminal-tab").forEach(t => t.classList.remove("active"));
-
-    terminals[id].pane.style.display = "flex";
-    terminals[id].tab.classList.add("active");
-
-    terminals[id].fitAddon.fit();
-    terminals[id].term.focus();
-
-    activeTerminalId = id;
-  }
-
-  function closeTerminal(id) {
-    const t = terminals[id];
-    if (!t) return;
-
-    if (t.ws) t.ws.close();
-    t.term.dispose();
-    t.pane.remove();
-    t.tab.remove();
-
-    delete terminals[id];
-
-    const keys = Object.keys(terminals);
-    if (keys.length > 0) activateTerminal(keys[0]);
-  }
-
-  window.stopProject = function () {
-    console.log("🛑 stopProject() called");
-
-    for (const id in terminals) {
-      const t = terminals[id];
-
-      // RUN terminal만 종료
-      if (t.isRunTerminal && t.ws && t.ws.readyState === WebSocket.OPEN) {
-        console.log("🛑 STOP signal sent to", id);
-        t.ws.send("STOP");
-        t.term.writeln("\n\x1b[33m[Stopping project...]\x1b[0m\n");
+        setTimeout(() => {
+          pane.remove();
+          createTerminal(isRun);
+        }, 3000);
       }
-    }
-  };
+    };
 
+    return { term, ws, id };
+  }
 })();

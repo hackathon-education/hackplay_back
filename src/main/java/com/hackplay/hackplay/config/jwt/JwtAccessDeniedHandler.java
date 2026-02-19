@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+// 401
 @Component
 public class JwtAccessDeniedHandler implements AccessDeniedHandler {
 

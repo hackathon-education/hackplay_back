@@ -136,5 +136,10 @@ public class CommonEnums {
         IN_PROGRESS,
         NOT_STARTED
     }
-
+    
+    public enum ProjectType {
+        REACT,
+        SPRING,
+        PYTHON
+    }
 }

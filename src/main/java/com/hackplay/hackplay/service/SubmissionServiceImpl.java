@@ -6,8 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,11 +38,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         @Override
         @Transactional
-        public void submit(SubmissionReqDto submissionReqDto) throws IOException {
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
-
+        public void submit(String uuid, SubmissionReqDto submissionReqDto) throws IOException {
         Member member = memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
@@ -96,12 +90,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         // 유저 - 내 제출 목록 조회
         @Override
-        public List<SubmissionListRespDto> getMySubmissions() {
-                Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-                String uuid = (String)authentication.getPrincipal();
-
+        public List<SubmissionListRespDto> getMySubmissions(String uuid) {
                 Member member = memberRepository
                 .findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
@@ -116,9 +105,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         // 유저 - 제출 상세 조회
         @Override
-        public SubmissionDetailRespDto getSubmissionDetail(Long submissionId) {
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                String uuid = (String)authentication.getPrincipal();
+        public SubmissionDetailRespDto getSubmissionDetail(String uuid, Long submissionId) {
 
                 Member member = memberRepository.findByUuid(uuid).orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 

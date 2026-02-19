@@ -13,8 +13,6 @@ import com.hackplay.hackplay.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,9 +40,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public void create(Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String uuid = (String) authentication.getPrincipal();
+    public void create(String uuid, Long projectId, FileCreateReqDto fileCreateReqDto) throws IOException {
 
         memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));

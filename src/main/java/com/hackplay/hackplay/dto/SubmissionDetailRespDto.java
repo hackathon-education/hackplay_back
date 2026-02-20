@@ -2,7 +2,7 @@ package com.hackplay.hackplay.dto;
 
 import java.time.LocalDateTime;
 
-import com.hackplay.hackplay.domain.Submission;
+import com.hackplay.hackplay.domain.Project;
 
 import lombok.Builder;
 import lombok.Data;
@@ -11,19 +11,19 @@ import lombok.Data;
 @Builder
 public class SubmissionDetailRespDto {
 
-    private Long submissionId;
+    private Long projectId;
     private String projectName;
-    private Integer week;
+    private Integer currentWeek;
     private String status;
     private LocalDateTime submittedAt;
 
-    public static SubmissionDetailRespDto from(Submission submission) {
+    public static SubmissionDetailRespDto from(Project project) {
         return SubmissionDetailRespDto.builder()
-                .submissionId(submission.getId())
-                .projectName(submission.getProject().getName())
-                .week(submission.getWeek())
-                .status(submission.getStatus().name())
-                .submittedAt(submission.getSubmittedAt())
+                .projectId(project.getId())
+                .projectName(project.getName())
+                .currentWeek(project.getCurrentWeek())
+                .status(project.getStatus().name())
+                .submittedAt(project.getSubmittedAt())
                 .build();
     }
 }

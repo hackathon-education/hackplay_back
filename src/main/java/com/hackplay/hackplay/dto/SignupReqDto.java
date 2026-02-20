@@ -1,6 +1,6 @@
 package com.hackplay.hackplay.dto;
 
-import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.enums.member.Role;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -25,7 +25,7 @@ public class SignupReqDto {
     private String email;
 
     @NotNull(message = "직군은 필수입니다.")
-    private CommonEnums.Role role;
+    private Role role;
     
     @NotBlank(message = "비밀번호는 필수입니다.")
     @Pattern(

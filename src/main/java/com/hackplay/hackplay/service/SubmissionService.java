@@ -10,5 +10,5 @@ import com.hackplay.hackplay.dto.SubmissionReqDto;
 public interface SubmissionService {
     void submit(String uuid, SubmissionReqDto submissionReqDto) throws IOException;
     List<SubmissionListRespDto> getMySubmissions(String uuid);
-    SubmissionDetailRespDto getSubmissionDetail(String uuid, Long submissionId);
+    SubmissionDetailRespDto getSubmissionDetail(String uuid, Long projectId);
 }

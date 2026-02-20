@@ -2,8 +2,8 @@ package com.hackplay.hackplay.dto;
 
 import java.time.LocalDateTime;
 
-import com.hackplay.hackplay.common.CommonEnums;
-import com.hackplay.hackplay.domain.Submission;
+import com.hackplay.hackplay.common.enums.submission.SubmissionStatus;
+import com.hackplay.hackplay.domain.Project;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -12,23 +12,23 @@ import lombok.Getter;
 @Builder
 public class AdminSubmissionListRespDto {
 
-    private Long submissionId;
+    private Long projectId;
     private String email;
     private String nickname;
     private String lectureName; // 강의명
-    private int week; // 주차 (1 ~ 4주차)
-    private CommonEnums.SubmissionStatus status; // 채점 상태
+    private int currnetWeek; // 현재 주차
+    private SubmissionStatus status; // 채점 상태
     private LocalDateTime submittedAt; // 제출 시간
 
-    public static AdminSubmissionListRespDto from(Submission submission) {
+    public static AdminSubmissionListRespDto from(Project project) {
         return AdminSubmissionListRespDto.builder()
-                .submissionId(submission.getId())
-                .email(submission.getMember().getEmail())
-                .nickname(submission.getMember().getNickname())
-                .lectureName(submission.getProject().getLecture().getTitle())
-                .week(submission.getWeek())
-                .status(submission.getStatus())
-                .submittedAt(submission.getSubmittedAt())
+                .projectId(project.getId())
+                .email(project.getMember().getEmail())
+                .nickname(project.getMember().getNickname())
+                .lectureName(project.getLecture().getTitle())
+                .currnetWeek(project.getCurrentWeek())
+                .status(project.getStatus())
+                .submittedAt(project.getSubmittedAt())
                 .build();
     }
 }

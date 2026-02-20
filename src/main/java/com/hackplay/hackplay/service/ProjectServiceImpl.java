@@ -17,17 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
-import com.hackplay.hackplay.common.CommonEnums;
-import com.hackplay.hackplay.common.CommonEnums.WeekProgressStatus;
+import com.hackplay.hackplay.common.enums.lecture.Lecture;
+import com.hackplay.hackplay.common.enums.lecture.WeekProgressStatus;
 import com.hackplay.hackplay.domain.Member;
-import com.hackplay.hackplay.domain.MemberProgress;
 import com.hackplay.hackplay.domain.Project;
 import com.hackplay.hackplay.dto.LectureProgressRespDto;
 import com.hackplay.hackplay.dto.LectureWeekProgressDto;
 import com.hackplay.hackplay.dto.ProjectCreateReqDto;
 import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
-import com.hackplay.hackplay.repository.MemberProgressRepository;
 import com.hackplay.hackplay.repository.MemberRepository;
 import com.hackplay.hackplay.repository.ProjectRepository;
 
@@ -42,7 +40,6 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
     private final MemberRepository memberRepository;
-    private final MemberProgressRepository memberProgressRepository;
 
     @Value("${projects.base-path}")
     private String projectsBasePath;
@@ -81,13 +78,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .build();
 
         projectRepository.save(project);
-
-        memberProgressRepository.save(
-                MemberProgress.builder()
-                        .member(member)
-                        .project(project)
-                        .build()
-        );
 
         // ===============================
         // 경로 설정
@@ -215,7 +205,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public LectureProgressRespDto getLectureProgress(String uuid, CommonEnums.Lecture lecture) {
+    public LectureProgressRespDto getLectureProgress(String uuid, Lecture lecture) {
 
         Member member = memberRepository.findByUuid(uuid)
             .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
@@ -230,7 +220,7 @@ public class ProjectServiceImpl implements ProjectService {
                 IntStream.rangeClosed(1, lecture.getTotalWeek())
                     .mapToObj(w -> new LectureWeekProgressDto(
                         w,
-                        WeekProgressStatus.NOT_STARTED,
+                        WeekProgressStatus.LOCKED,
                         null
                     ))
                     .toList();
@@ -238,12 +228,8 @@ public class ProjectServiceImpl implements ProjectService {
             return new LectureProgressRespDto(weeks);
         }
 
-        MemberProgress progress = memberProgressRepository
-            .findByMemberAndProject(member, project)
-            .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_PROGRESS));
-
-        int currentWeek = progress.getCurrentWeek();
-        boolean isCompleted = progress.isCompleted();
+        int currentWeek = project.getCurrentWeek();
+        boolean isCompleted = project.isCompleted();
 
         List<LectureWeekProgressDto> weeks =
             IntStream.rangeClosed(1, project.getTotalWeek())
@@ -267,7 +253,7 @@ public class ProjectServiceImpl implements ProjectService {
 
                     return new LectureWeekProgressDto(
                         week,
-                        WeekProgressStatus.NOT_STARTED,
+                        WeekProgressStatus.LOCKED,
                         null
                     );
                 })
@@ -282,16 +268,11 @@ public class ProjectServiceImpl implements ProjectService {
         Member member = memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
 
-        return projectRepository.findAll().stream()
-                .map(project -> {
-                    Integer week = memberProgressRepository
-                            .findByMemberAndProject(member, project)
-                            .map(MemberProgress::getCurrentWeek)
-                            .orElse(1);
+        List<Project> projects = projectRepository.findByMember(member);
 
-                    return ProjectRespDto.from(project, week);
-                })
-                .collect(Collectors.toList());
+        return projects.stream()
+                    .map(project -> ProjectRespDto.from(project, project.getCurrentWeek()))
+                    .collect(Collectors.toList());
     }
 
     @Override
@@ -300,16 +281,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
-        Member member = memberRepository.findByUuid(uuid)
-                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
-
-        MemberProgress progress = memberProgressRepository.findByMemberAndProject(
-                member,
-                project
-        )
-        .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_PROGRESS));
-
-        return ProjectRespDto.from(project, progress.getCurrentWeek());
+        return ProjectRespDto.from(project, project.getCurrentWeek());
     }
 
     @Override
@@ -331,7 +303,7 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.PROJECT_NOT_FOUND));
 
-        memberProgressRepository.deleteByProject(project);
+        projectRepository.delete(project);
 
         Path projectPath = Paths.get(projectsBasePath, project.getUuid().toString());
         if (Files.exists(projectPath)) {

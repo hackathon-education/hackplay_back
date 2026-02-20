@@ -42,7 +42,6 @@ public class MemberServiceImpl implements MemberService {
                 return MemberProfileRespDto.from(
                         member.getEmail(),
                         member.getNickname(),
-                        member.getPassword(),
                         member.isEmailVerified(),
                         member.getProfileImageUrl(),
                         member.getRole(),

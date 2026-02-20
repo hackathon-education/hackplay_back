@@ -42,10 +42,10 @@ public class AuthServiceImpl implements AuthService{
         if(memberRepository.existsByEmail(signupReqDto.getEmail()))
             throw new BaseException(BaseResponseStatus.DUPLICATE_EMAIL);
 
-        // String verified = redisUtil.getData(signupReqDto.getEmail() + ":verified");
-        // if (verified == null || !verified.equals("true")) {
-        //     throw new BaseException(BaseResponseStatus.EMAIL_NOT_VERIFIED);
-        // }
+        String verified = redisUtil.getData(signupReqDto.getEmail() + ":verified");
+        if (verified == null || !verified.equals("true")) {
+            throw new BaseException(BaseResponseStatus.EMAIL_NOT_VERIFIED);
+        }
 
         Member member = Member.builder()
                         .uuid(UUID.randomUUID().toString())

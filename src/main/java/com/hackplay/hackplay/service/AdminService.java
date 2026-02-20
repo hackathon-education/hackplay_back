@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.core.io.FileSystemResource;
 
-import com.hackplay.hackplay.common.CommonEnums.SubmissionStatus;
+import com.hackplay.hackplay.common.enums.submission.SubmissionStatus;
 import com.hackplay.hackplay.dto.AdminSubmissionDetailRespDto;
 import com.hackplay.hackplay.dto.AdminSubmissionListRespDto;
 

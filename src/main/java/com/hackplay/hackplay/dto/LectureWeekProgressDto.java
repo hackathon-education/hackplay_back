@@ -1,6 +1,7 @@
 package com.hackplay.hackplay.dto;
 
-import com.hackplay.hackplay.common.CommonEnums.WeekProgressStatus;
+
+import com.hackplay.hackplay.common.enums.lecture.WeekProgressStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

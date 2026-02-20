@@ -1,6 +1,7 @@
 package com.hackplay.hackplay.common;
 
-import com.hackplay.hackplay.common.CommonEnums.Lecture;
+import com.hackplay.hackplay.common.enums.lecture.Lecture;
+
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

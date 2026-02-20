@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
-import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.enums.member.Status;
 import com.hackplay.hackplay.config.jwt.TokenProvider;
 import com.hackplay.hackplay.config.redis.RedisUtil;
 import com.hackplay.hackplay.domain.Member;
@@ -42,10 +42,10 @@ public class AuthServiceImpl implements AuthService{
         if(memberRepository.existsByEmail(signupReqDto.getEmail()))
             throw new BaseException(BaseResponseStatus.DUPLICATE_EMAIL);
 
-        String verified = redisUtil.getData(signupReqDto.getEmail() + ":verified");
-        if (verified == null || !verified.equals("true")) {
-            throw new BaseException(BaseResponseStatus.EMAIL_NOT_VERIFIED);
-        }
+        // String verified = redisUtil.getData(signupReqDto.getEmail() + ":verified");
+        // if (verified == null || !verified.equals("true")) {
+        //     throw new BaseException(BaseResponseStatus.EMAIL_NOT_VERIFIED);
+        // }
 
         Member member = Member.builder()
                         .uuid(UUID.randomUUID().toString())
@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService{
                         .nickname(signupReqDto.getNickname())
                         .password(bCryptPasswordEncoder.encode(signupReqDto.getPassword()))
                         .role(signupReqDto.getRole())
-                        .status(CommonEnums.Status.ACTIVE)
+                        .status(Status.ACTIVE)
                         .isEmailVerified(true)
                         .build();
 

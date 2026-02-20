@@ -2,8 +2,9 @@ package com.hackplay.hackplay.domain;
 
 import java.time.LocalDateTime;
 
-import com.hackplay.hackplay.common.CommonEnums;
-import com.hackplay.hackplay.common.CommonEnums.Auth;
+import com.hackplay.hackplay.common.enums.member.Auth;
+import com.hackplay.hackplay.common.enums.member.Role;
+import com.hackplay.hackplay.common.enums.member.Status;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,19 +28,19 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    Long id;
+    private Long id;
 
     @Column(name = "uuid", unique = true)
-    String uuid;
+    private String uuid;
 
     @Column(name = "email", unique = true, nullable = false)
-    String email;
+    private String email;
 
     @Column(name = "nickname", nullable = false)
-    String nickname;
+    private String nickname;
 
     @Column(name = "password", nullable = false)
-    String password;
+    private String password;
 
     @Column(name = "is_email_verified", nullable = false)
     private boolean isEmailVerified;
@@ -48,30 +49,30 @@ public class Member {
     private String refreshToken;
 
     @Column(name = "role", nullable = false)
-    CommonEnums.Role role;
+    private Role role;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "auth", nullable = false)
-    CommonEnums.Auth auth = Auth.USER;
+    private Auth auth = Auth.USER;
 
     @Column(name = "status", nullable = false)
-    CommonEnums.Status status;
+    private Status status;
 
     @Column(name = "last_login_at")
-    LocalDateTime lastLoginAt;
+    private LocalDateTime lastLoginAt;
 
     @Column(name = "profile_image_url")
-    String profileImageUrl;
+    private String profileImageUrl;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    LocalDateTime createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
     @Builder
     public Member(Long id, String uuid , String email, String nickname,  String password, boolean isEmailVerified, String refreshToken, 
-                CommonEnums.Role role, CommonEnums.Status status, LocalDateTime lastLoginAt, String profileImageUrl) {
+                Role role, Status status, LocalDateTime lastLoginAt, String profileImageUrl) {
         this.id = id;
         this.uuid = uuid;
         this.email = email;
@@ -95,5 +96,17 @@ public class Member {
 
     public void signoutUpdate() {
         this.refreshToken = null;
+    }
+
+    public void updateMemberInfo(String nickname, String profileImageUrl, Role role) {
+        this.nickname = nickname;
+        this.profileImageUrl = profileImageUrl;
+        this.role = role;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+        this.updatedAt = LocalDateTime.now();
     }
 }

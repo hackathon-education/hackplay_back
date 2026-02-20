@@ -1,6 +1,6 @@
 package com.hackplay.hackplay.dto;
 
-import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.enums.lecture.Lecture;
 import com.hackplay.hackplay.domain.Project;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +13,7 @@ public class ProjectRespDto {
     private Long id;
     private String name;
     private String description;
-    private CommonEnums.Lecture lecture;
+    private Lecture lecture;
     private String templateType;
     private Boolean isPublic;
     private String nickname;

@@ -34,15 +34,15 @@ public class SubmissionController {
         return ApiResponse.success();
     }
 
-    // 내 제출 목록 조회
-    @GetMapping("/my")
+    // 제출 목록 조회
+    @GetMapping
     public ApiResponse<List<SubmissionListRespDto>> getMySubmissions(@AuthenticationPrincipal String uuid) {
         return ApiResponse.success(submissionService.getMySubmissions(uuid));
     }
 
-    // 내 제출 상세 조회
-    @GetMapping("/{submissionId}")
-    public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId, @AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(submissionService.getSubmissionDetail(uuid, submissionId));
+    // 제출 상세 조회
+    @GetMapping("/{projectId}")
+    public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
+        return ApiResponse.success(submissionService.getSubmissionDetail(uuid, projectId));
     }
 }

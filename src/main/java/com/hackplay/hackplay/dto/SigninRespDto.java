@@ -1,6 +1,6 @@
 package com.hackplay.hackplay.dto;
 
-import com.hackplay.hackplay.common.CommonEnums;
+import com.hackplay.hackplay.common.enums.member.Role;
 import com.hackplay.hackplay.domain.Member;
 
 import lombok.Builder;
@@ -13,7 +13,7 @@ public class SigninRespDto {
     private String email;
     private boolean isEmailVerified;
     private String profileImageUrl;
-    private CommonEnums.Role role;
+    private Role role;
 
     public static SigninRespDto entityToDto(Member member) {
         return SigninRespDto.builder()

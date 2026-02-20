@@ -34,7 +34,8 @@ public enum BaseResponseStatus {
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
     FILE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 존재하는 파일입니다."),
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기가 1MB를 초과했습니다."),
-
+    INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "유효하지 않은 파일 형식입니다. 이미지 파일만 허용됩니다."),
+    
     // ===================== Project ERROR =====================
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
     PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 프로젝트에 대한 접근 권한이 없습니다."),

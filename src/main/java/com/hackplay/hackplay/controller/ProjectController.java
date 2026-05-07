@@ -4,14 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.hackplay.hackplay.common.ApiResponse;
 import com.hackplay.hackplay.common.enums.lecture.Lecture;
@@ -21,6 +14,7 @@ import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
 import com.hackplay.hackplay.service.ProjectService;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -31,35 +25,42 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    // 프로젝트 생성
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효성 검증 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 강의에 대한 프로젝트가 존재합니다."),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "프로젝트 생성에 실패했습니다.")
+    })
     @PostMapping
     public ApiResponse<Void> createProject(@Valid @RequestBody ProjectCreateReqDto projectCreateReqDto, @AuthenticationPrincipal String uuid) throws IOException, InterruptedException {
         projectService.create(uuid, projectCreateReqDto);
         return ApiResponse.success();
     }
 
-    // 강의 진행도 조회
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
     @GetMapping("/lectures/{lectureId}/progress")
     public ApiResponse<LectureProgressRespDto> getLectureProgress(@PathVariable("lectureId") int lectureId, @AuthenticationPrincipal String uuid) {
         Lecture lecture = Lecture.fromId(lectureId);
         return ApiResponse.success(projectService.getLectureProgress(uuid, lecture));
     }
 
-    // 프로젝트 목록 조회
     @GetMapping
     public ApiResponse<List<ProjectRespDto>> getProjects(@AuthenticationPrincipal String uuid) {
-        List<ProjectRespDto> projectRespDto = projectService.getProjects(uuid);
-        return ApiResponse.success(projectRespDto);
+        return ApiResponse.success(projectService.getProjects(uuid));
     }
 
-    // 프로젝트 상세 조회
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "해당 프로젝트에 대한 접근 권한이 없습니다."),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
+    })
     @GetMapping("/{projectId}")
     public ApiResponse<ProjectRespDto> getProject(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
-        ProjectRespDto projectRespDto = projectService.getProject(uuid, projectId);
-        return ApiResponse.success(projectRespDto);
+        return ApiResponse.success(projectService.getProject(uuid, projectId));
     }
 
-    // 프로젝트 수정
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "해당 프로젝트에 대한 접근 권한이 없습니다."),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
+    })
     @PatchMapping("/{projectId}")
     public ApiResponse<Void> updateProject(
             @PathVariable("projectId") Long projectId,
@@ -68,7 +69,10 @@ public class ProjectController {
         return ApiResponse.success();
     }
 
-    // 프로젝트 삭제
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다."),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "프로젝트 삭제에 실패했습니다.")
+    })
     @DeleteMapping("/{projectId}")
     public ApiResponse<Void> deleteProject(@PathVariable("projectId") Long projectId) {
         projectService.delete(projectId);

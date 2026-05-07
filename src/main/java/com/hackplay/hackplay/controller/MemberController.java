@@ -3,12 +3,7 @@ package com.hackplay.hackplay.controller;
 import java.io.IOException;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hackplay.hackplay.common.ApiResponse;
@@ -16,6 +11,7 @@ import com.hackplay.hackplay.dto.MemberReqDto;
 import com.hackplay.hackplay.dto.MemberProfileRespDto;
 import com.hackplay.hackplay.service.MemberService;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -24,21 +20,23 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
     private final MemberService memberService;
-    
-    // 현재 사용자 정보 조회
+
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
     @GetMapping
     public ApiResponse<MemberProfileRespDto> getMemberInfo(@AuthenticationPrincipal String uuid) {
         return ApiResponse.success(memberService.getMemberInfo(uuid));
     }
 
-    // 현재 사용자 정보 수정
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
     @PostMapping
     public ApiResponse<MemberProfileRespDto> updateMemberInfo(@AuthenticationPrincipal String uuid, MemberReqDto memberReqDto) {
         memberService.updateMemberInfo(uuid, memberReqDto);
         return ApiResponse.success();
     }
 
-    // 프로필 이미지 업로드
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 파일 형식이거나 크기를 초과했습니다.")
+    })
     @PostMapping("/profile-image")
     public ApiResponse<Void> uploadProfileImage(
             @RequestParam("file") MultipartFile file,
@@ -47,11 +45,10 @@ public class MemberController {
         return ApiResponse.success();
     }
 
-    // 회원 탈퇴
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
     @DeleteMapping
     public ApiResponse<MemberProfileRespDto> deleteMemberInfo(@AuthenticationPrincipal String uuid) {
         memberService.deleteMemberInfo(uuid);
         return ApiResponse.success();
     }
-
 }

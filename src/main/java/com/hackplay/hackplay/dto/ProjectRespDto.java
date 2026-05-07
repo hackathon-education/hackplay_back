@@ -18,6 +18,7 @@ public class ProjectRespDto {
     private Boolean isPublic;
     private String nickname;
     private Integer week;
+    private Boolean isCompleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -31,6 +32,7 @@ public class ProjectRespDto {
                 .isPublic(project.getIsPublic())
                 .nickname(project.getMember().getNickname())
                 .week(week)
+                .isCompleted(project.isCompleted())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();

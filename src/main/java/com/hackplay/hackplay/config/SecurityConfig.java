@@ -51,6 +51,7 @@ public class SecurityConfig {
                         "/api/v1/auth/signin",
                         "/api/v1/auth/signup",
                         "/api/v1/auth/reissue",
+                        "/api/v1/auth/signout",
                         "/api/v1/email/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",

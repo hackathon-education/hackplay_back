@@ -89,10 +89,9 @@ public class AuthServiceImpl implements AuthService{
     @Override
     @Transactional
     public void signout(String uuid) {
-        Member member =  memberRepository.findByUuid(uuid)
-                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+        if (uuid == null) return;
 
-        member.signoutUpdate();
+        memberRepository.findByUuid(uuid).ifPresent(Member::signoutUpdate);
     }
 
     @Override

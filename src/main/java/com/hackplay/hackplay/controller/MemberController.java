@@ -11,8 +11,10 @@ import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.common.CommonResponse;
 import com.hackplay.hackplay.dto.MemberProfileRespDto;
 import com.hackplay.hackplay.dto.MemberReqDto;
+import com.hackplay.hackplay.dto.MemberUpdatePWReqDto;
 import com.hackplay.hackplay.service.MemberService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -30,10 +32,18 @@ public class MemberController {
 
     @ApiErrorResponses({BaseResponseStatus.NO_EXIST_MEMBERS})
     @PostMapping
-    public CommonResponse<Void> updateMemberInfo(@AuthenticationPrincipal String uuid, MemberReqDto memberReqDto) {
+    public CommonResponse<Void> updateMemberInfo(@AuthenticationPrincipal String uuid, @RequestBody @Valid MemberReqDto memberReqDto) {
         memberService.updateMemberInfo(uuid, memberReqDto);
         return CommonResponse.success();
+    }    
+
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_MEMBERS, BaseResponseStatus.PASSWORD_MISMATCH})
+    @PatchMapping("/password")
+    public CommonResponse<Void> updateMemberPassword(@AuthenticationPrincipal String uuid, @RequestBody @Valid MemberUpdatePWReqDto memberUpdatePWReqDto) {
+        memberService.updateMemberPassword(uuid, memberUpdatePWReqDto);
+        return CommonResponse.success();
     }
+
 
     @ApiErrorResponses({BaseResponseStatus.INVALID_FILE_TYPE, BaseResponseStatus.FILE_SIZE_EXCEEDED})
     @PostMapping("/profile-image")

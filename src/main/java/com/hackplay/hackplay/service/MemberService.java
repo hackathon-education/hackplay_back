@@ -1,6 +1,7 @@
 package com.hackplay.hackplay.service;
 
 import com.hackplay.hackplay.dto.MemberReqDto;
+import com.hackplay.hackplay.dto.MemberUpdatePWReqDto;
 
 import java.io.IOException;
 
@@ -13,6 +14,7 @@ public interface MemberService {
 
     MemberProfileRespDto getMemberInfo(String uuid);
     void updateMemberInfo(String uuid, MemberReqDto memberReqDto);
+    void updateMemberPassword(String uuid, MemberUpdatePWReqDto memberUpdatePWReqDto);
 
     ImageUploadRespDto uploadProfileImage(MultipartFile file, String uuid)  throws IOException;
 

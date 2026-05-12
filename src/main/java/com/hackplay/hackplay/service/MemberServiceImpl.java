@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +15,7 @@ import com.hackplay.hackplay.common.BaseException;
 import com.hackplay.hackplay.common.BaseResponseStatus;
 import com.hackplay.hackplay.domain.Member;
 import com.hackplay.hackplay.dto.MemberReqDto;
+import com.hackplay.hackplay.dto.MemberUpdatePWReqDto;
 import com.hackplay.hackplay.dto.ImageUploadRespDto;
 import com.hackplay.hackplay.dto.MemberProfileRespDto;
 import com.hackplay.hackplay.repository.MemberRepository;
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${file.upload-path:./uploads/profile/}") 
     private String uploadPath;
@@ -58,9 +61,28 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
         
-        // 2. 에러 해결: Role.valueOf()는 String을 인자로 받습니다. 
-        // memberReqDto.getRole()이 이미 Role 타입이라면 바로 넣고, String이라면 아래처럼 사용하세요.
         member.updateMemberInfo(memberReqDto.getNickname(), memberReqDto.getProfileImageUrl(), memberReqDto.getRole());
+    }
+
+    @Override
+    @Transactional
+    public void updateMemberPassword(String uuid, MemberUpdatePWReqDto memberUpdatePWReqDto) {
+        Member member = memberRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BaseException(BaseResponseStatus.NO_EXIST_MEMBERS));
+
+        // 현재 비밀번호 검증
+        if (!passwordEncoder.matches(memberUpdatePWReqDto.getCurrentPassword(), member.getPassword())) {
+            throw new BaseException(BaseResponseStatus.PASSWORD_MISMATCH);
+        }
+
+        // 새 비밀번호와 확인 비밀번호 일치 여부 검증
+        if (!memberUpdatePWReqDto.getNewPassword().equals(memberUpdatePWReqDto.getCheckNewPassword())) {
+            throw new BaseException(BaseResponseStatus.PASSWORD_MISMATCH);
+        }
+
+
+        // 새 비밀번호 인코딩 후 저장
+        member.updatePassword(passwordEncoder.encode(memberUpdatePWReqDto.getNewPassword()));
     }
 
     @Override

@@ -6,7 +6,9 @@ import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackplay.hackplay.common.ApiResponse;
+import com.hackplay.hackplay.common.ApiErrorResponses;
+import com.hackplay.hackplay.common.BaseResponseStatus;
+import com.hackplay.hackplay.common.CommonResponse;
 import com.hackplay.hackplay.common.enums.lecture.Lecture;
 import com.hackplay.hackplay.dto.LectureProgressRespDto;
 import com.hackplay.hackplay.dto.ProjectCreateReqDto;
@@ -14,7 +16,6 @@ import com.hackplay.hackplay.dto.ProjectRespDto;
 import com.hackplay.hackplay.dto.ProjectUpdateReqDto;
 import com.hackplay.hackplay.service.ProjectService;
 
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -25,57 +26,44 @@ public class ProjectController {
 
     private final ProjectService projectService;
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효성 검증 실패"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 해당 강의에 대한 프로젝트가 존재합니다."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "프로젝트 생성에 실패했습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.VALIDATION_ERROR, BaseResponseStatus.PROJECT_ALREADY_EXISTS_FOR_LECTURE, BaseResponseStatus.PROJECT_CREATION_FAILED})
     @PostMapping
-    public ApiResponse<Void> createProject(@Valid @RequestBody ProjectCreateReqDto projectCreateReqDto, @AuthenticationPrincipal String uuid) throws IOException, InterruptedException {
+    public CommonResponse<Void> createProject(@Valid @RequestBody ProjectCreateReqDto projectCreateReqDto, @AuthenticationPrincipal String uuid) throws IOException, InterruptedException {
         projectService.create(uuid, projectCreateReqDto);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
+    @ApiErrorResponses({BaseResponseStatus.PROJECT_NOT_FOUND})
     @GetMapping("/lectures/{lectureId}/progress")
-    public ApiResponse<LectureProgressRespDto> getLectureProgress(@PathVariable("lectureId") int lectureId, @AuthenticationPrincipal String uuid) {
+    public CommonResponse<LectureProgressRespDto> getLectureProgress(@PathVariable("lectureId") int lectureId, @AuthenticationPrincipal String uuid) {
         Lecture lecture = Lecture.fromId(lectureId);
-        return ApiResponse.success(projectService.getLectureProgress(uuid, lecture));
+        return CommonResponse.success(projectService.getLectureProgress(uuid, lecture));
     }
 
     @GetMapping
-    public ApiResponse<List<ProjectRespDto>> getProjects(@AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(projectService.getProjects(uuid));
+    public CommonResponse<List<ProjectRespDto>> getProjects(@AuthenticationPrincipal String uuid) {
+        return CommonResponse.success(projectService.getProjects(uuid));
     }
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "해당 프로젝트에 대한 접근 권한이 없습니다."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.PROJECT_ACCESS_DENIED, BaseResponseStatus.PROJECT_NOT_FOUND})
     @GetMapping("/{projectId}")
-    public ApiResponse<ProjectRespDto> getProject(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(projectService.getProject(uuid, projectId));
+    public CommonResponse<ProjectRespDto> getProject(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
+        return CommonResponse.success(projectService.getProject(uuid, projectId));
     }
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "해당 프로젝트에 대한 접근 권한이 없습니다."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.PROJECT_ACCESS_DENIED, BaseResponseStatus.PROJECT_NOT_FOUND})
     @PatchMapping("/{projectId}")
-    public ApiResponse<Void> updateProject(
+    public CommonResponse<Void> updateProject(
             @PathVariable("projectId") Long projectId,
             @Valid @RequestBody ProjectUpdateReqDto projectUpdateReqDto) {
         projectService.update(projectId, projectUpdateReqDto);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "프로젝트 삭제에 실패했습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.PROJECT_NOT_FOUND, BaseResponseStatus.PROJECT_DELETION_FAILED})
     @DeleteMapping("/{projectId}")
-    public ApiResponse<Void> deleteProject(@PathVariable("projectId") Long projectId) {
+    public CommonResponse<Void> deleteProject(@PathVariable("projectId") Long projectId) {
         projectService.delete(projectId);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 }

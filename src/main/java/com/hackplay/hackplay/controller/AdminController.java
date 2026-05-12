@@ -1,6 +1,5 @@
 package com.hackplay.hackplay.controller;
 
-import java.io.File;
 import java.util.List;
 
 import org.springframework.core.io.FileSystemResource;
@@ -10,15 +9,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackplay.hackplay.common.ApiResponse;
+import com.hackplay.hackplay.common.ApiErrorResponses;
+import com.hackplay.hackplay.common.BaseResponseStatus;
+import com.hackplay.hackplay.common.CommonResponse;
 import com.hackplay.hackplay.dto.AdminGradeReqDto;
 import com.hackplay.hackplay.dto.AdminSubmissionDetailRespDto;
 import com.hackplay.hackplay.dto.AdminSubmissionListRespDto;
 import com.hackplay.hackplay.service.AdminService;
 
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.io.File;
 
 @RequiredArgsConstructor
 @RestController
@@ -29,31 +31,28 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ApiResponse<List<AdminSubmissionListRespDto>> getAllSubmissions() {
-        return ApiResponse.success(adminService.getAllSubmissions());
+    public CommonResponse<List<AdminSubmissionListRespDto>> getAllSubmissions() {
+        return CommonResponse.success(adminService.getAllSubmissions());
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "제출 내역이 존재하지 않습니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_SUBMISSION})
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{submissionId}")
-    public ApiResponse<AdminSubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId) {
-        return ApiResponse.success(adminService.getSubmissionDetail(submissionId));
+    public CommonResponse<AdminSubmissionDetailRespDto> getSubmissionDetail(@PathVariable("submissionId") Long submissionId) {
+        return CommonResponse.success(adminService.getSubmissionDetail(submissionId));
     }
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효성 검증 실패"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "제출 내역이 존재하지 않습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.VALIDATION_ERROR, BaseResponseStatus.NO_EXIST_SUBMISSION})
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{submissionId}/grade")
-    public ApiResponse<String> gradeSubmission(
+    public CommonResponse<String> gradeSubmission(
             @PathVariable("submissionId") Long submissionId,
             @Valid @RequestBody AdminGradeReqDto adminGradeReqDto) {
         adminService.grade(submissionId, adminGradeReqDto.getStatus());
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "제출 내역이 존재하지 않습니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_SUBMISSION})
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/submission/{submissionId}/download")
     public ResponseEntity<FileSystemResource> download(@PathVariable("submissionId") Long submissionId) {

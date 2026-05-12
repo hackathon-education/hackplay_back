@@ -109,4 +109,9 @@ public class Member {
         this.profileImageUrl = profileImageUrl;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

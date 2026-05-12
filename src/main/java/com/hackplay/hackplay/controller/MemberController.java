@@ -6,12 +6,13 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hackplay.hackplay.common.ApiResponse;
-import com.hackplay.hackplay.dto.MemberReqDto;
+import com.hackplay.hackplay.common.ApiErrorResponses;
+import com.hackplay.hackplay.common.BaseResponseStatus;
+import com.hackplay.hackplay.common.CommonResponse;
 import com.hackplay.hackplay.dto.MemberProfileRespDto;
+import com.hackplay.hackplay.dto.MemberReqDto;
 import com.hackplay.hackplay.service.MemberService;
 
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -21,34 +22,32 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_MEMBERS})
     @GetMapping
-    public ApiResponse<MemberProfileRespDto> getMemberInfo(@AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(memberService.getMemberInfo(uuid));
+    public CommonResponse<MemberProfileRespDto> getMemberInfo(@AuthenticationPrincipal String uuid) {
+        return CommonResponse.success(memberService.getMemberInfo(uuid));
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_MEMBERS})
     @PostMapping
-    public ApiResponse<MemberProfileRespDto> updateMemberInfo(@AuthenticationPrincipal String uuid, MemberReqDto memberReqDto) {
+    public CommonResponse<Void> updateMemberInfo(@AuthenticationPrincipal String uuid, MemberReqDto memberReqDto) {
         memberService.updateMemberInfo(uuid, memberReqDto);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 파일 형식이거나 크기를 초과했습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.INVALID_FILE_TYPE, BaseResponseStatus.FILE_SIZE_EXCEEDED})
     @PostMapping("/profile-image")
-    public ApiResponse<Void> uploadProfileImage(
+    public CommonResponse<Void> uploadProfileImage(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal String uuid) throws IOException {
         memberService.uploadProfileImage(file, uuid);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "존재하지 않는 회원입니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_MEMBERS})
     @DeleteMapping
-    public ApiResponse<MemberProfileRespDto> deleteMemberInfo(@AuthenticationPrincipal String uuid) {
+    public CommonResponse<Void> deleteMemberInfo(@AuthenticationPrincipal String uuid) {
         memberService.deleteMemberInfo(uuid);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 }

@@ -6,13 +6,14 @@ import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.hackplay.hackplay.common.ApiResponse;
+import com.hackplay.hackplay.common.ApiErrorResponses;
+import com.hackplay.hackplay.common.BaseResponseStatus;
+import com.hackplay.hackplay.common.CommonResponse;
 import com.hackplay.hackplay.dto.SubmissionDetailRespDto;
 import com.hackplay.hackplay.dto.SubmissionListRespDto;
 import com.hackplay.hackplay.dto.SubmissionReqDto;
 import com.hackplay.hackplay.service.SubmissionService;
 
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -23,24 +24,21 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
 
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "현재 제출할 수 없는 상태입니다."),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "프로젝트를 찾을 수 없습니다.")
-    })
+    @ApiErrorResponses({BaseResponseStatus.VALIDATION_ERROR, BaseResponseStatus.PROJECT_NOT_FOUND})
     @PostMapping
-    public ApiResponse<Void> submitProject(@Valid @RequestBody SubmissionReqDto submissionReqDto, @AuthenticationPrincipal String uuid) throws IOException {
+    public CommonResponse<Void> submitProject(@Valid @RequestBody SubmissionReqDto submissionReqDto, @AuthenticationPrincipal String uuid) throws IOException {
         submissionService.submit(uuid, submissionReqDto);
-        return ApiResponse.success();
+        return CommonResponse.success();
     }
 
     @GetMapping
-    public ApiResponse<List<SubmissionListRespDto>> getMySubmissions(@AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(submissionService.getMySubmissions(uuid));
+    public CommonResponse<List<SubmissionListRespDto>> getMySubmissions(@AuthenticationPrincipal String uuid) {
+        return CommonResponse.success(submissionService.getMySubmissions(uuid));
     }
 
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "제출 내역이 존재하지 않습니다.")
+    @ApiErrorResponses({BaseResponseStatus.NO_EXIST_SUBMISSION})
     @GetMapping("/{projectId}")
-    public ApiResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
-        return ApiResponse.success(submissionService.getSubmissionDetail(uuid, projectId));
+    public CommonResponse<SubmissionDetailRespDto> getSubmissionDetail(@PathVariable("projectId") Long projectId, @AuthenticationPrincipal String uuid) {
+        return CommonResponse.success(submissionService.getSubmissionDetail(uuid, projectId));
     }
 }

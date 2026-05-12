@@ -21,7 +21,7 @@ public class BaseException extends RuntimeException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        ApiResponse<?> errorResponse = ApiResponse.fail(status);
+        CommonResponse<?> errorResponse = CommonResponse.fail(status);
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonResponse = objectMapper.writeValueAsString(errorResponse);
 
